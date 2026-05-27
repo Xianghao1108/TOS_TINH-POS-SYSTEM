@@ -12,9 +12,16 @@ use App\Models\User;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('roles')->paginate(10)->appends(request()->query());
+        $query = User::with('roles');
+
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $users = $query->paginate(10)->appends(request()->query());
+        
         return Inertia::render('Users/Index', [
             'users' => $users,
         ]);
@@ -41,7 +48,7 @@ class UserController extends Controller
             ],
             'password' => ['required', 'string', 'min:8'],
             'roles' => ['nullable'],
-            'roles.*' => ['string', 'exists:roles,name'], // validate each role exists if provided
+            'roles.*' => ['integer', 'exists:roles,id'], // validate each role exists if provided
         ])->validate();
 
         $user = User::create([
@@ -70,8 +77,32 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
+
+        $validated = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'password' => ['nullable', 'string', 'min:8'],
+            'roles' => ['nullable'],
+            'roles.*' => ['integer', 'exists:roles,id'], // Update validates IDs based on the frontend changes
+        ])->validate();
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
         $user->save();
-        $user->syncRoles($request->roles);
+        
+        if (!empty($request->roles)) {
+            $user->syncRoles($request->roles);
+        }
+
         return to_route('users.index')->with("success", "User updated successfully");
     }
 

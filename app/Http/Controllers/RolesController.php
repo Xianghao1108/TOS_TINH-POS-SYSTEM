@@ -10,9 +10,15 @@ use App\Http\Controllers\Controller;
 
 class RolesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::latest()->paginate(10)->appends(request()->query());
+        $query = Role::latest();
+
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $roles = $query->paginate(10)->appends(request()->query());
 
         return Inertia::render('Roles/Index', [
             'roles' => $roles
@@ -31,15 +37,15 @@ class RolesController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-           'name' => 'required|min:3|unique:roles,name'
+           'name' => 'required|min:3|unique:roles,name',
+           'permissions' => 'nullable|array',
+           'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
-        $role = Role::create($validated);
+        $role = Role::create(['name' => $validated['name']]);
 
-        if($request->permissions) {
-
-            $permissions = Permission::whereIn("id", $request->permissions)->pluck('name');
-
+        if (!empty($validated['permissions'])) {
+            $permissions = Permission::whereIn('id', $validated['permissions'])->pluck('name');
             $role->syncPermissions($permissions);
         }
 
@@ -61,17 +67,19 @@ class RolesController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => 'required|min:3|unique:roles,name,' . $id
+            'name' => 'required|min:3|unique:roles,name,' . $id,
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
         $role = Role::findById($id);
-
         $role->name = $validated['name'];
-
         $role->save();
 
-        $permissions = Permission::whereIn("id", $request->permissions)->pluck('name');
-
+        $permissions = [];
+        if (!empty($validated['permissions'])) {
+            $permissions = Permission::whereIn('id', $validated['permissions'])->pluck('name');
+        }
         $role->syncPermissions($permissions);
 
         return to_route('roles.index')->with("success", "Role updated successfully");

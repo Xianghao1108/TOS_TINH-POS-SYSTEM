@@ -38,5 +38,4 @@ php artisan config:cache
 # Run the queue worker:
 php artisan queue:work
 
-
 php artisan make:model YourModelName -mcr

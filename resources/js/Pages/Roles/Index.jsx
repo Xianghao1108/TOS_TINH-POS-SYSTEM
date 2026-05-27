@@ -61,7 +61,10 @@ export default function UserPage({ roles }) {
                                 <h3 className="card-title">
                                     Datalist Management
                                 </h3>
-                                <div className="card-tools">
+                                <div className="card-tools d-flex align-items-center">
+                                    <Link href={route('roles.create')} className="btn btn-primary btn-sm mr-2">
+                                        <i className="fas fa-plus"></i> Add Role
+                                    </Link>
                                     <div className="input-group input-group-sm" style={{ width: '150px' }}>
                                         <input type="text" name="table_search" className="form-control float-right" placeholder="Search" />
                                         <div className="input-group-append">
@@ -77,8 +80,8 @@ export default function UserPage({ roles }) {
                                     <thead>
                                         <tr>
                                             <th>#ID</th>
-                                            <th>Name</th>
-                                            <th>Guard</th>
+                                            <th>Role Title</th>
+                                            <th>User ID</th>
                                             <th>Created At</th>
                                             {can['role-edit' || 'role-delete'] && (
                                                 <th>Action</th>

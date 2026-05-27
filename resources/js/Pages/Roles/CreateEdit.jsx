@@ -41,12 +41,11 @@ export default function RoleCreateEdit({ role, permissions }) {
         if (role == undefined) {
             post(route('roles.store'), {
                 preserveState: true,
-                onFinish: () => reset(),
+                onSuccess: () => reset(),
             });
         } else {
             patch(route('roles.update', role.id), {
                 preserveState: true,
-                onFinish: () => reset(),
             });
         }
     };
@@ -63,7 +62,7 @@ export default function RoleCreateEdit({ role, permissions }) {
                             <div className="card-header">
                                 <h3 className="card-title">Register Data Management</h3>
                             </div>
-                            <form onSubmit={submit}>
+                            <form onSubmit={submit} noValidate>
                                 <div className="card-body">
                                     {/* Title Field */}
                                     <div className="form-group">

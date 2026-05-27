@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user(),
+                'roles' => $request->user()?->getRoleNames() ?? [],
                 'can' => $request->user()?->loadMissing('roles.permissions')
                     ->roles->flatMap(function ($role) {
                         return $role->permissions;

@@ -9,11 +9,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function CategoriesCreateEdit({ datas }) {
+export default function CategoriesCreateEdit({ auth, datas }) {
+    const currentUsername = auth?.user?.username || auth?.user?.name || 'System Admin';
     const { data, setData, post, patch, errors, reset, processing, recentlySuccessful } =
         useForm({
             name: datas.name ? datas.name : '',
             view_order: datas.view_order ? datas.view_order : '',
+            username: datas.username ? datas.username : currentUsername,
+            status: datas.status ? datas.status : '',
         });
 
     const submit = (e) => {
@@ -62,7 +65,7 @@ export default function CategoriesCreateEdit({ datas }) {
                                         <InputError className="mt-2" message={errors.name} />
                                     </div>
                                     <div className="form-group">
-                                        <label className='text-uppercase' htmlFor="view_order"><span className='text-danger'>*</span>Order</label>
+                                        <label className='text-uppercase' htmlFor="view_order"><span className='text-danger'>*</span>Total Product</label>
                                         <input
                                             value={data.view_order}
                                             onChange={(e) => setData('view_order', e.target.value)}
@@ -72,6 +75,23 @@ export default function CategoriesCreateEdit({ datas }) {
                                             id="view_order"
                                         />
                                         <InputError className="mt-2" message={errors.view_order} />
+                                    </div>
+                                    <input type="hidden" name="username" value={data.username} />
+                                    <InputError className="mt-2" message={errors.username} />
+                                    <div className="form-group">
+                                        <label className='text-uppercase' htmlFor="status"><span className='text-danger'>*</span>Status</label>
+                                        <select
+                                            value={data.status}
+                                            onChange={(e) => setData('status', e.target.value)}
+                                            name="status"
+                                            className={`form-control ${errors.status && 'is-invalid'}`}
+                                            id="status"
+                                        >
+                                            <option value="">Select Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                        <InputError className="mt-2" message={errors.status} />
                                     </div>
                                 </div>
                                 <div className="card-footer clearfix">

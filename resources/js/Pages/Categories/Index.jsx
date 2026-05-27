@@ -8,12 +8,14 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import SecondaryButtonLink from '@/Components/SecondaryButtonLink';
 import AdminLayout from '@/Layouts/AdminLayout';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import moment from 'moment';
 import { useState } from 'react';
 
-export default function CategoriesPage({ categoryData }) {
+export default function CategoriesPage({ auth, categoryData, filters }) {
     const datasList = categoryData.data;
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const currentUsername = auth?.user?.username || auth?.user?.name || 'System Admin';
     const [confirmingDataDeletion, setConfirmingDataDeletion] = useState(false);
     const [dataEdit, setDataEdit] = useState({})
     const { data: deleteData, setData: setDeleteData, delete: destroy, processing, reset, errors, clearErrors } =
@@ -47,6 +49,11 @@ export default function CategoriesPage({ categoryData }) {
     const headWeb = 'Category List'
     const linksBreadcrumb = [{ title: 'Home', url: '/' }, { title: headWeb, url: '' }];
 
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(route('categories.index'), { search: searchQuery }, { preserveState: true, replace: true });
+    };
+
     return (
         <AdminLayout breadcrumb={<Breadcrumb header={headWeb} links={linksBreadcrumb} />} >
             <Head title={headWeb} />
@@ -58,15 +65,25 @@ export default function CategoriesPage({ categoryData }) {
                                 <h3 className="card-title">
                                     Datalist Management
                                 </h3>
-                                <div className="card-tools">
-                                    <div className="input-group input-group-sm" style={{ width: '150px' }}>
-                                        <input type="text" name="table_search" className="form-control float-right" placeholder="Search" />
+                                <div className="card-tools d-flex align-items-center">
+                                    <Link href={route('categories.create')} className="btn btn-primary btn-sm mr-2">
+                                        <i className="fas fa-plus"></i> Add Category
+                                    </Link>
+                                    <form onSubmit={handleSearch} className="input-group input-group-sm" style={{ width: '150px' }}>
+                                        <input 
+                                            type="text" 
+                                            name="table_search" 
+                                            className="form-control float-right" 
+                                            placeholder="Search" 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
                                         <div className="input-group-append">
                                             <button type="submit" className="btn btn-default">
                                                 <i className="fas fa-search"></i>
                                             </button>
                                         </div>
-                                    </div>
+                                    </form>
                                 </div>
                             </div>
                             <div className="card-body table-responsive p-0">
@@ -75,7 +92,9 @@ export default function CategoriesPage({ categoryData }) {
                                         <tr>
                                             <th>#ID</th>
                                             <th>Title</th>
-                                            <th>Order</th>
+                                            <th>Total product</th>
+                                            <th>Created By</th>
+                                            <th>Status</th>
                                             <th>Created At</th>
                                             <th>Action</th>
                                         </tr>
@@ -87,6 +106,8 @@ export default function CategoriesPage({ categoryData }) {
                                                     <td>{item?.id}</td>
                                                     <td>{item?.name}</td>
                                                     <td>{item?.view_order}</td>
+                                                    <td><span className="badge badge-info">{item?.username}</span></td>
+                                                    <td>{item?.status}</td>
                                                     <td>{moment(item?.created_at).format("DD/MM/YYYY")}</td>
                                                     <td width={'170px'}>
                                                         <Link href={route('categories.edit', item.id)} class="btn btn-info btn-xs mr-2">
@@ -100,7 +121,7 @@ export default function CategoriesPage({ categoryData }) {
                                             ))
                                             :
                                             <tr>
-                                                <td colSpan={5}>There are no record!</td>
+                                                <td colSpan={7}>There are no record!</td>
                                             </tr>
                                         }
                                     </tbody>

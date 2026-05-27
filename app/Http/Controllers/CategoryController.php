@@ -14,10 +14,17 @@ class CategoryController extends Controller
      */
     public function index(Request $request): Response
     {
-        $rsDatas = Category::latest()->paginate(10)->appends(request()->query());
+        $query = Category::latest();
+
+        if ($request->has('search') && $request->search != null) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $rsDatas = $query->paginate(10)->appends(request()->query());
 
         return Inertia::render('Categories/Index', [
-            'categoryData' => $rsDatas
+            'categoryData' => $rsDatas,
+            'filters' => $request->only(['search'])
         ]);
     }
 
@@ -39,6 +46,7 @@ class CategoryController extends Controller
         $model->create($request->validate([
             'name' => 'required|max:255|min:2',
             'view_order' => 'required',
+            'username' => 'required|string|max:255',
         ]));
         return redirect()->route('categories.index');
         // return back()->with('message', 'Data added successfully');
@@ -71,6 +79,8 @@ class CategoryController extends Controller
         $request->validate([
             'name' => 'required|max:255|min:2',
             'view_order' => 'required',
+            'username' => 'required|string|max:255',
+            'status' => 'required|string|in:active,inactive',
         ]);
         
         $rsDatasModel = Category::find($id);

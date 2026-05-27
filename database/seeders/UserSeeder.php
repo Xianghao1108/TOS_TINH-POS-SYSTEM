@@ -16,15 +16,28 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::create([
-            'name' => 'admin',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('123456')
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'admin',
+                'password' => Hash::make('123456')
+            ]
+        );
         
-        $role = Role::create(['name' => 'Admin']);
+        $role = Role::firstOrCreate(['name' => 'Admin']);
         $permissions = Permission::pluck('id','id')->all();
         $role->syncPermissions($permissions);
         $user->assignRole([$role->id]);
+
+        $staffUser = User::firstOrCreate(
+            ['email' => 'staff@gmail.com'],
+            [
+                'name' => 'staff',
+                'password' => Hash::make('123456')
+            ]
+        );
+        
+        $staffRole = Role::firstOrCreate(['name' => 'Staff']);
+        $staffUser->assignRole([$staffRole->id]);
     }
 }

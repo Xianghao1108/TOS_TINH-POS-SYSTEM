@@ -33,6 +33,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        if ($request->user()->hasRole('Staff')) {
+            return redirect()->route('orders.index');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
