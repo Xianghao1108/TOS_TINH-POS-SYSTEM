@@ -1,107 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm, router, usePage } from '@inertiajs/react';
 import Breadcrumb from '@/Components/Breadcrumb';
 import Modal from '@/Components/Modal';
+import AdminLayout from '@/Layouts/AdminLayout';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
+
+const money = (value) => `$${Number(value || 0).toFixed(2)}`;
+const invoiceNo = (id) => `#INV-${String(id).padStart(5, '0')}`;
+const orderNo = (id) => `#ORD-${String(id).padStart(5, '0')}`;
+
+const formatDate = (value, withTime = false) => {
+    if (!value) return 'N/A';
+
+    return new Date(value).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+    });
+};
+
+const fieldClass = (hasError) =>
+    `h-11 w-full rounded-xl border bg-white px-4 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+        hasError
+            ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+            : 'border-emerald-100 focus:border-emerald-400 focus:ring-emerald-100'
+    }`;
 
 export default function InvoicesIndex({ invoices = {}, customers = [], pendingOrders = [], users = [], filters = {} }) {
     const { auth } = usePage().props;
+    const invoiceList = invoices.data || [];
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
-    const [filteredPendingOrders, setFilteredPendingOrders] = useState([]);
-
-    // States for customer textbox autocomplete search
     const [customerSearch, setCustomerSearch] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    // Inertia form for adding new Invoice
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         customer_id: '',
         staff_id: auth?.user?.id || '',
-        status: '2', // default to unpaid (2)
+        status: '2',
         total: '0.00',
         order_ids: [],
     });
 
-    // Handle search query submission
+    const filteredCustomers = useMemo(() => {
+        const query = customerSearch.toLowerCase();
+        return customers.filter((customer) =>
+            customer.name?.toLowerCase().includes(query) ||
+            customer.phone?.includes(customerSearch)
+        );
+    }, [customers, customerSearch]);
+
+    const filteredPendingOrders = useMemo(() => {
+        if (!data.customer_id) return [];
+        return pendingOrders.filter((order) => String(order.customer_id) === String(data.customer_id));
+    }, [pendingOrders, data.customer_id]);
+
+    const stats = useMemo(() => {
+        const paid = invoiceList.filter((invoice) => invoice.status === 1).length;
+        const unpaid = invoiceList.filter((invoice) => invoice.status === 2).length;
+        const loadedRevenue = invoiceList.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+
+        return [
+            { label: 'Total invoices', value: invoices.total || 0, icon: 'fas fa-file-invoice-dollar', tone: 'text-slate-900 bg-white' },
+            { label: 'Paid', value: paid, icon: 'fas fa-check-circle', tone: 'text-emerald-700 bg-emerald-50' },
+            { label: 'Unpaid', value: unpaid, icon: 'fas fa-clock', tone: 'text-amber-700 bg-amber-50' },
+            { label: 'Loaded value', value: money(loadedRevenue), icon: 'fas fa-wallet', tone: 'text-fuchsia-700 bg-fuchsia-50' },
+        ];
+    }, [invoiceList, invoices.total]);
+
+    const selectedOrdersTotal = (orderIds) => pendingOrders
+        .filter((order) => orderIds.includes(order.id))
+        .reduce((sum, order) => sum + Number(order.total || 0), 0)
+        .toFixed(2);
+
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get('/invoices', { search: searchQuery }, { preserveState: true });
+        router.get(route('invoices.index'), { search: searchQuery }, { preserveState: true, replace: true });
     };
 
-    // Filter customers list by textbox entry
-    const filteredCustomers = customers.filter(c => 
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-        (c.phone && c.phone.includes(customerSearch))
-    );
-
-    // Filter pending orders when customer selection changes
-    useEffect(() => {
-        if (data.customer_id) {
-            const customerOrders = pendingOrders.filter(
-                order => String(order.customer_id) === String(data.customer_id)
-            );
-            setFilteredPendingOrders(customerOrders);
-            // Reset selected orders when customer changes
-            setData(prev => ({
-                ...prev,
-                order_ids: [],
-                total: '0.00'
-            }));
-        } else {
-            setFilteredPendingOrders([]);
-            setData(prev => ({
-                ...prev,
-                order_ids: [],
-                total: '0.00'
-            }));
-        }
-    }, [data.customer_id, pendingOrders]);
-
-    // Handle textbox changes for Customer selection
-    const handleCustomerSearchChange = (e) => {
-        const val = e.target.value;
-        setCustomerSearch(val);
-        setData('customer_id', ''); // clear customer ID until selected
-        setShowSuggestions(true);
-    };
-
-    // Handle selecting a Customer from the overlay list
-    const handleSelectCustomer = (customer) => {
-        setCustomerSearch(customer.name);
-        setData('customer_id', customer.id);
-        setShowSuggestions(false);
-    };
-
-    // Handle checkbox change in Add Modal
-    const handleOrderCheckboxChange = (orderId, isChecked) => {
-        let updatedOrderIds = [...data.order_ids];
-        if (isChecked) {
-            updatedOrderIds.push(orderId);
-        } else {
-            updatedOrderIds = updatedOrderIds.filter(id => id !== orderId);
-        }
-
-        // Calculate total reactively
-        const newTotal = pendingOrders
-            .filter(order => updatedOrderIds.includes(order.id))
-            .reduce((sum, order) => sum + parseFloat(order.total), 0);
-
-        setData(prev => ({
-            ...prev,
-            order_ids: updatedOrderIds,
-            total: newTotal.toFixed(2)
-        }));
+    const clearSearch = () => {
+        setSearchQuery('');
+        router.get(route('invoices.index'), {}, { preserveState: true, replace: true });
     };
 
     const openAddModal = () => {
         clearErrors();
-        reset({
+        reset();
+        setData({
             customer_id: '',
-            staff_id: auth?.user?.id || (users[0]?.id || ''),
+            staff_id: auth?.user?.id || users[0]?.id || '',
             status: '2',
             total: '0.00',
             order_ids: [],
@@ -109,6 +99,57 @@ export default function InvoicesIndex({ invoices = {}, customers = [], pendingOr
         setCustomerSearch('');
         setShowSuggestions(false);
         setIsAddModalOpen(true);
+    };
+
+    const closeAddModal = () => {
+        setIsAddModalOpen(false);
+        setCustomerSearch('');
+        setShowSuggestions(false);
+        clearErrors();
+    };
+
+    const selectCustomer = (customer) => {
+        setCustomerSearch(customer.name);
+        setData({
+            ...data,
+            customer_id: customer.id,
+            order_ids: [],
+            total: '0.00',
+        });
+        setShowSuggestions(false);
+    };
+
+    const handleCustomerSearchChange = (e) => {
+        setCustomerSearch(e.target.value);
+        setData({
+            ...data,
+            customer_id: '',
+            order_ids: [],
+            total: '0.00',
+        });
+        setShowSuggestions(true);
+    };
+
+    const toggleOrder = (orderId, checked) => {
+        const nextOrderIds = checked
+            ? [...data.order_ids, orderId]
+            : data.order_ids.filter((id) => id !== orderId);
+
+        setData({
+            ...data,
+            order_ids: nextOrderIds,
+            total: selectedOrdersTotal(nextOrderIds),
+        });
+    };
+
+    const submitAddInvoice = (e) => {
+        e.preventDefault();
+        post(route('invoices.store'), {
+            onSuccess: () => {
+                reset();
+                closeAddModal();
+            },
+        });
     };
 
     const openDetailModal = (invoice) => {
@@ -121,557 +162,450 @@ export default function InvoicesIndex({ invoices = {}, customers = [], pendingOr
         setIsDeleteModalOpen(true);
     };
 
-    const submitAddInvoice = (e) => {
-        e.preventDefault();
-        post('/invoices', {
-            onSuccess: () => {
-                reset();
-                setIsAddModalOpen(false);
-            },
-        });
-    };
-
     const handleToggleStatus = (invoice) => {
-        const nextStatus = invoice.status === 1 ? 2 : 1;
-        router.patch(`/invoices/${invoice.id}`, {
-            status: nextStatus
+        router.patch(route('invoices.update', invoice.id), {
+            status: invoice.status === 1 ? 2 : 1,
         }, {
-            preserveScroll: true
+            preserveScroll: true,
         });
     };
 
     const handleDeleteInvoice = () => {
-        router.delete(`/invoices/${selectedInvoice.id}`, {
+        router.delete(route('invoices.destroy', selectedInvoice.id), {
             onSuccess: () => {
                 setIsDeleteModalOpen(false);
                 setSelectedInvoice(null);
             },
-            preserveScroll: true
+            preserveScroll: true,
         });
     };
 
-    const headWeb = 'Invoices';
-    const linksBreadcrumb = [
-        { title: 'Home', url: '/' },
-        { title: headWeb, url: '' }
-    ];
-
-    // Stats calculations
-    const invoiceList = invoices.data || [];
-    const totalInvoicesCount = invoices.total || 0;
-    const paidInvoicesCount = invoiceList.filter(inv => inv.status === 1).length;
-    const unpaidInvoicesCount = invoiceList.filter(inv => inv.status === 2).length;
-    const totalRevenue = invoiceList.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+    const statusPill = (status) => status === 1 ? (
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            Paid
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+            Unpaid
+        </span>
+    );
 
     return (
-        <AdminLayout breadcrumb={<Breadcrumb header={headWeb} links={linksBreadcrumb} />}>
-            <Head title={headWeb} />
-            <div className="p-6 max-w-7xl mx-auto">
-                
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
-                        <p className="text-sm text-gray-500">Create, manage and link customer orders in unified invoices.</p>
-                    </div>
-                    <button onClick={openAddModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 transition duration-150">
-                        <i className="fas fa-plus"></i> New Invoice
-                    </button>
-                </div>
+        <AdminLayout breadcrumb={<Breadcrumb header="Invoices" links={[{ title: 'Home', url: '/' }, { title: 'Invoices', url: '' }]} />}>
+            <Head title="Invoices" />
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white p-4 rounded border border-gray-200 shadow-sm flex flex-col">
-                        <span className="text-gray-500 text-sm font-medium">Total Invoices</span>
-                        <span className="text-2xl font-bold text-gray-800">{totalInvoicesCount}</span>
-                    </div>
-                    <div className="bg-white p-4 rounded border border-gray-200 shadow-sm flex flex-col">
-                        <span className="text-gray-500 text-sm font-medium">Paid Invoices</span>
-                        <span className="text-2xl font-bold text-green-600">{paidInvoicesCount}</span>
-                    </div>
-                    <div className="bg-white p-4 rounded border border-gray-200 shadow-sm flex flex-col">
-                        <span className="text-gray-500 text-sm font-medium">Unpaid Invoices</span>
-                        <span className="text-2xl font-bold text-yellow-600">{unpaidInvoicesCount}</span>
-                    </div>
-                    <div className="bg-white p-4 rounded border border-gray-200 shadow-sm flex flex-col">
-                        <span className="text-gray-500 text-sm font-medium">Loaded Total Sum</span>
-                        <span className="text-2xl font-bold text-blue-600">${totalRevenue.toFixed(2)}</span>
-                    </div>
-                </div>
-
-                {/* Search Bar */}
-                <form onSubmit={handleSearch} className="mb-6 flex gap-2">
-                    <div className="relative flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i className="fas fa-search text-gray-400"></i>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search by Invoice ID..."
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <button type="submit" className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 px-4 py-2 rounded transition">
-                        Search
-                    </button>
-                    {filters.search && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSearchQuery('');
-                                router.get('/invoices');
-                            }}
-                            className="text-red-500 hover:text-red-700 px-2 py-2 flex items-center"
-                        >
-                            Clear
-                        </button>
-                    )}
-                </form>
-
-                {/* Data Table */}
-                <div className="bg-white rounded border border-gray-200 shadow-sm overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="p-4 font-semibold text-gray-700">Invoice ID</th>
-                                <th className="p-4 font-semibold text-gray-700">Date</th>
-                                <th className="p-4 font-semibold text-gray-700">Customer Name</th>
-                                <th className="p-4 font-semibold text-gray-700">Cashier</th>
-                                <th className="p-4 font-semibold text-gray-700">Orders Connected</th>
-                                <th className="p-4 font-semibold text-gray-700">Total</th>
-                                <th className="p-4 font-semibold text-gray-700">Status</th>
-                                <th className="p-4 font-semibold text-gray-700 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {invoiceList.length > 0 ? (
-                                invoiceList.map((invoice) => (
-                                    <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                                        <td className="p-4 text-gray-800 font-semibold">
-                                            #INV-{String(invoice.id).padStart(5, '0')}
-                                        </td>
-                                        <td className="p-4 text-gray-600">
-                                            {invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            }) : 'N/A'}
-                                        </td>
-                                        <td className="p-4 text-gray-800">
-                                            {invoice.customer ? invoice.customer.name : 'Walk-in Customer'}
-                                        </td>
-                                        <td className="p-4 text-gray-600">
-                                            {invoice.staff ? invoice.staff.name : 'Unknown Cashier'}
-                                        </td>
-                                        <td className="p-4 text-gray-600 text-sm">
-                                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium">
-                                                {invoice.orders ? invoice.orders.length : 0} Orders
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-gray-900 font-bold">
-                                            ${parseFloat(invoice.total).toFixed(2)}
-                                        </td>
-                                        <td className="p-4">
-                                            {invoice.status === 1 ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                                    <span className="w-1.5 h-1.5 mr-1.5 bg-green-500 rounded-full"></span>
-                                                    Paid
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                                                    <span className="w-1.5 h-1.5 mr-1.5 bg-yellow-500 rounded-full"></span>
-                                                    Unpaid
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="p-4 flex items-center justify-center gap-3">
-                                            <button
-                                                onClick={() => openDetailModal(invoice)}
-                                                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
-                                                title="View Items"
-                                            >
-                                                <i className="fas fa-eye"></i> View
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleStatus(invoice)}
-                                                className={`px-3 py-1 rounded text-xs font-semibold border transition ${
-                                                    invoice.status === 1
-                                                        ? 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100'
-                                                        : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                                                }`}
-                                                title="Toggle Status"
-                                            >
-                                                {invoice.status === 1 ? 'Mark Unpaid' : 'Mark Paid'}
-                                            </button>
-                                            <button
-                                                onClick={() => openDeleteModal(invoice)}
-                                                className="text-red-500 hover:text-red-700"
-                                                title="Delete Invoice"
-                                            >
-                                                <i className="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="8" className="p-8 text-center text-gray-500">
-                                        No invoices found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {invoices.links && invoices.links.length > 3 && (
-                    <div className="mt-6 flex justify-center gap-1">
-                        {invoices.links.map((link, idx) => (
-                            <button
-                                key={idx}
-                                disabled={!link.url}
-                                onClick={() => router.get(link.url, {}, { preserveState: true })}
-                                className={`px-3 py-1.5 rounded border text-sm transition ${
-                                    link.active
-                                        ? 'bg-blue-600 border-blue-600 text-white font-semibold'
-                                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Add Invoice Modal */}
-            <Modal show={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} maxWidth="2xl">
-                {/* Modal Header */}
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-800">Create New Invoice</h2>
-                    <button
-                        onClick={() => setIsAddModalOpen(false)}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                    >
-                        <i className="fas fa-times text-lg"></i>
-                    </button>
-                </div>
-
-                {/* Modal Body */}
-                <form onSubmit={submitAddInvoice} className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Customer Search Textbox with Autocomplete */}
-                        <div className="relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                            <input
-                                type="text"
-                                value={customerSearch}
-                                onChange={handleCustomerSearchChange}
-                                onFocus={() => setShowSuggestions(true)}
-                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                placeholder="Type customer name or phone..."
-                                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                required
-                            />
-                            {showSuggestions && (
-                                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-48 overflow-y-auto shadow-lg">
-                                    {filteredCustomers.length > 0 ? (
-                                        filteredCustomers.map(customer => (
-                                            <button
-                                                key={customer.id}
-                                                type="button"
-                                                onClick={() => handleSelectCustomer(customer)}
-                                                className="w-full text-left px-3 py-2 hover:bg-blue-50 transition text-sm text-gray-700 flex justify-between"
-                                            >
-                                                <span className="font-medium">{customer.name}</span>
-                                                <span className="text-xs text-gray-400">{customer.phone || 'No phone'}</span>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-2 text-sm text-gray-500 italic">No customers found</div>
-                                    )}
+            <section className="content">
+                <div className="min-h-[calc(100vh-140px)] bg-[#F2F9F5] px-4 py-6 sm:px-6 lg:px-8">
+                    <div className="mx-auto max-w-7xl">
+                        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                                    <i className="fas fa-receipt text-[10px]"></i>
+                                    Billing desk
                                 </div>
-                            )}
-                            {errors.customer_id && <div className="text-red-500 text-sm mt-1">{errors.customer_id}</div>}
-                        </div>
-
-                        {/* Cashier (Staff) Selector */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cashier (Staff)</label>
-                            <select
-                                value={data.staff_id}
-                                onChange={e => setData('staff_id', e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                required
-                            >
-                                <option value="">-- Select Cashier --</option>
-                                {users.map(user => (
-                                    <option key={user.id} value={user.id}>
-                                        {user.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.staff_id && <div className="text-red-500 text-sm mt-1">{errors.staff_id}</div>}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Status Selector */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <select
-                                value={data.status}
-                                onChange={e => setData('status', e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                required
-                            >
-                                <option value="1">Paid</option>
-                                <option value="2">Unpaid</option>
-                            </select>
-                            {errors.status && <div className="text-red-500 text-sm mt-1">{errors.status}</div>}
-                        </div>
-
-                        {/* Total Invoice Cost (Reactive representation) */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Invoice Cost ($)</label>
-                            <input
-                                type="text"
-                                value={`$ ${data.total}`}
-                                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 font-bold text-blue-700 focus:outline-none"
-                                readOnly
-                            />
-                            {errors.total && <div className="text-red-500 text-sm mt-1">{errors.total}</div>}
-                        </div>
-                    </div>
-
-                    {/* Pending Orders Selector Checkboxes */}
-                    <div className="border-t border-gray-200 pt-4">
-                        <h3 className="text-md font-semibold text-gray-800 mb-2">Select Pending Orders</h3>
-                        {data.customer_id ? (
-                            filteredPendingOrders.length > 0 ? (
-                                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded p-3 bg-gray-50 space-y-2">
-                                    {filteredPendingOrders.map(order => (
-                                        <label
-                                            key={order.id}
-                                            className="flex items-center justify-between p-2 hover:bg-white rounded border border-transparent hover:border-gray-200 cursor-pointer transition"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={data.order_ids.includes(order.id)}
-                                                    onChange={e => handleOrderCheckboxChange(order.id, e.target.checked)}
-                                                    className="h-4.5 w-4.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                />
-                                                <div>
-                                                    <span className="font-semibold text-gray-800 text-sm">
-                                                        Order #ORD-{String(order.id).padStart(5, '0')}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500 ml-2">
-                                                        {new Date(order.created_at).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <span className="font-bold text-gray-800 text-sm">
-                                                ${parseFloat(order.total).toFixed(2)}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-yellow-600 bg-yellow-50 border border-yellow-100 rounded p-3">
-                                    No pending orders found for this customer.
+                                <h1 className="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">Invoices</h1>
+                                <p className="mt-2 text-sm font-medium text-slate-500">
+                                    Bundle customer orders, track payment status, and keep checkout history tidy.
                                 </p>
-                            )
-                        ) : (
-                            <p className="text-sm text-gray-400 bg-gray-50 border border-gray-100 rounded p-3 text-center">
-                                Please select a customer first to view their pending orders.
-                            </p>
+                            </div>
+
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <form onSubmit={handleSearch} className="relative w-full sm:w-72">
+                                    <input
+                                        type="text"
+                                        className="h-11 w-full rounded-xl border border-emerald-100 bg-white pl-10 pr-4 text-sm text-slate-700 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                        placeholder="Search invoice ID"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 transition hover:text-emerald-600"
+                                        aria-label="Search invoices"
+                                    >
+                                        <i className="fas fa-search text-xs"></i>
+                                    </button>
+                                </form>
+                                {filters.search && (
+                                    <button
+                                        onClick={clearSearch}
+                                        type="button"
+                                        className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-100 bg-white px-4 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                                <button
+                                    onClick={openAddModal}
+                                    type="button"
+                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00A86B] px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-200 transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2"
+                                >
+                                    <i className="fas fa-plus text-xs"></i>
+                                    New Invoice
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            {stats.map((item) => (
+                                <div key={item.label} className="rounded-2xl border border-emerald-50 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-500">{item.label}</p>
+                                            <p className="mt-2 text-2xl font-bold text-slate-950">{item.value}</p>
+                                        </div>
+                                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${item.tone}`}>
+                                            <i className={`${item.icon} text-lg`}></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-emerald-50 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
+                            <div className="hidden overflow-x-auto lg:block">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-emerald-50 bg-emerald-50/50 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                                            <th className="px-5 py-4">Invoice</th>
+                                            <th className="px-5 py-4">Customer</th>
+                                            <th className="px-5 py-4">Cashier</th>
+                                            <th className="px-5 py-4">Orders</th>
+                                            <th className="px-5 py-4 text-right">Total</th>
+                                            <th className="px-5 py-4">Status</th>
+                                            <th className="px-5 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-emerald-50">
+                                        {invoiceList.length > 0 ? invoiceList.map((invoice) => (
+                                            <tr key={invoice.id} className="transition hover:bg-emerald-50/30">
+                                                <td className="px-5 py-4">
+                                                    <p className="font-bold text-slate-950">{invoiceNo(invoice.id)}</p>
+                                                    <p className="mt-1 text-xs font-medium text-slate-400">{formatDate(invoice.created_at)}</p>
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <p className="font-semibold text-slate-800">{invoice.customer?.name || 'Walk-in Customer'}</p>
+                                                    <p className="mt-1 text-xs text-slate-400">{invoice.customer?.phone || 'No phone'}</p>
+                                                </td>
+                                                <td className="px-5 py-4 text-sm font-medium text-slate-600">{invoice.staff?.name || 'Unknown'}</td>
+                                                <td className="px-5 py-4">
+                                                    <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+                                                        {invoice.orders?.length || 0} orders
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-4 text-right text-base font-bold text-slate-950">{money(invoice.total)}</td>
+                                                <td className="px-5 py-4">{statusPill(invoice.status)}</td>
+                                                <td className="px-5 py-4">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={() => openDetailModal(invoice)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition hover:bg-cyan-50 hover:text-cyan-600" title="View invoice">
+                                                            <i className="fas fa-eye text-sm"></i>
+                                                        </button>
+                                                        <button onClick={() => handleToggleStatus(invoice)} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100">
+                                                            {invoice.status === 1 ? 'Mark unpaid' : 'Mark paid'}
+                                                        </button>
+                                                        <button onClick={() => openDeleteModal(invoice)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-600 transition hover:bg-rose-100" title="Delete invoice">
+                                                            <i className="fas fa-trash text-sm"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="7" className="px-5 py-14 text-center text-sm font-medium text-slate-500">
+                                                    No invoices found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
+                                {invoiceList.length > 0 ? invoiceList.map((invoice) => (
+                                    <article key={invoice.id} className="rounded-2xl border border-emerald-50 bg-white p-4 shadow-sm">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-bold text-slate-950">{invoiceNo(invoice.id)}</p>
+                                                <p className="mt-1 text-xs font-medium text-slate-400">{formatDate(invoice.created_at)}</p>
+                                            </div>
+                                            {statusPill(invoice.status)}
+                                        </div>
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Customer</p>
+                                                <p className="mt-1 font-semibold text-slate-800">{invoice.customer?.name || 'Walk-in'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Total</p>
+                                                <p className="mt-1 font-bold text-slate-950">{money(invoice.total)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 flex gap-2">
+                                            <button onClick={() => openDetailModal(invoice)} className="h-10 flex-1 rounded-xl bg-cyan-50 text-sm font-bold text-cyan-700">View</button>
+                                            <button onClick={() => handleToggleStatus(invoice)} className="h-10 flex-1 rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700">
+                                                {invoice.status === 1 ? 'Unpaid' : 'Paid'}
+                                            </button>
+                                            <button onClick={() => openDeleteModal(invoice)} className="h-10 w-11 rounded-xl bg-rose-50 text-rose-600">
+                                                <i className="fas fa-trash text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </article>
+                                )) : (
+                                    <div className="py-10 text-center text-sm font-medium text-slate-500">No invoices found.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {invoices.links && invoices.links.length > 3 && (
+                            <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                {invoices.links.map((link, idx) => (
+                                    <button
+                                        key={idx}
+                                        disabled={!link.url}
+                                        onClick={() => router.get(link.url, {}, { preserveState: true })}
+                                        className={`min-w-10 rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                            link.active
+                                                ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                : 'border-emerald-100 bg-white text-slate-600 hover:bg-emerald-50'
+                                        }`}
+                                        dangerouslySetInnerHTML={{ __html: link.label.replace('&laquo;', '<').replace('&raquo;', '>') }}
+                                    />
+                                ))}
+                            </div>
                         )}
-                        {errors.order_ids && <div className="text-red-500 text-sm mt-1">{errors.order_ids}</div>}
                     </div>
+                </div>
 
-                    {/* Modal Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={() => setIsAddModalOpen(false)}
-                            className="px-4 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 transition"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={processing || data.order_ids.length === 0}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
-                        >
-                            Create Invoice
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-
-            {/* Detail Modal */}
-            <Modal show={isDetailModalOpen && !!selectedInvoice} onClose={() => setIsDetailModalOpen(false)} maxWidth="3xl">
-                {/* Modal Header */}
-                {selectedInvoice && (
-                    <>
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-800">
-                                Invoice Details: #INV-{String(selectedInvoice.id).padStart(5, '0')}
-                            </h2>
-                            <button
-                                onClick={() => setIsDetailModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 transition"
-                            >
-                                <i className="fas fa-times text-lg"></i>
+                <Modal show={isAddModalOpen} onClose={closeAddModal} maxWidth="4xl">
+                    <form onSubmit={submitAddInvoice} className="max-h-[85vh] overflow-y-auto">
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-emerald-50 bg-white px-6 py-5">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                                    <i className="fas fa-receipt text-lg"></i>
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-950">Create Invoice</h2>
+                                    <p className="mt-1 text-sm text-slate-500">Select a customer, cashier, and pending orders.</p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={closeAddModal} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-700">
+                                <i className="fas fa-times"></i>
                             </button>
                         </div>
 
-                        {/* Modal Body */}
-                        <div className="p-6 space-y-6">
-                            {/* Overview Header Metadata */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 border border-gray-100 rounded">
-                                <div>
-                                    <span className="block text-xs font-semibold text-gray-400 uppercase">Customer</span>
-                                    <span className="font-semibold text-gray-800 text-sm">
-                                        {selectedInvoice.customer ? selectedInvoice.customer.name : 'Walk-in'}
-                                    </span>
-                                    {selectedInvoice.customer?.phone && (
-                                        <span className="block text-xs text-gray-500">{selectedInvoice.customer.phone}</span>
+                        <div className="space-y-6 p-6">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="relative">
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Customer</label>
+                                    <input
+                                        type="text"
+                                        value={customerSearch}
+                                        onChange={handleCustomerSearchChange}
+                                        onFocus={() => setShowSuggestions(true)}
+                                        onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+                                        placeholder="Type customer name or phone"
+                                        className={fieldClass(errors.customer_id)}
+                                    />
+                                    {showSuggestions && (
+                                        <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-emerald-100 bg-white p-1 shadow-xl">
+                                            {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => (
+                                                <button
+                                                    key={customer.id}
+                                                    type="button"
+                                                    onClick={() => selectCustomer(customer)}
+                                                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-emerald-50"
+                                                >
+                                                    <span className="font-semibold text-slate-800">{customer.name}</span>
+                                                    <span className="text-xs text-slate-400">{customer.phone || 'No phone'}</span>
+                                                </button>
+                                            )) : (
+                                                <div className="px-3 py-2 text-sm text-slate-500">No customers found</div>
+                                            )}
+                                        </div>
                                     )}
+                                    {errors.customer_id && <p className="mt-2 text-sm text-rose-600">{errors.customer_id}</p>}
                                 </div>
+
                                 <div>
-                                    <span className="block text-xs font-semibold text-gray-400 uppercase">Cashier</span>
-                                    <span className="font-semibold text-gray-800 text-sm">
-                                        {selectedInvoice.staff ? selectedInvoice.staff.name : 'Unknown'}
-                                    </span>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Cashier</label>
+                                    <select value={data.staff_id} onChange={(e) => setData('staff_id', e.target.value)} className={fieldClass(errors.staff_id)}>
+                                        <option value="">Select cashier</option>
+                                        {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+                                    </select>
+                                    {errors.staff_id && <p className="mt-2 text-sm text-rose-600">{errors.staff_id}</p>}
                                 </div>
+
                                 <div>
-                                    <span className="block text-xs font-semibold text-gray-400 uppercase">Date Issued</span>
-                                    <span className="font-semibold text-gray-800 text-sm">
-                                        {selectedInvoice.created_at ? new Date(selectedInvoice.created_at).toLocaleString() : 'N/A'}
-                                    </span>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Status</label>
+                                    <select value={data.status} onChange={(e) => setData('status', e.target.value)} className={fieldClass(errors.status)}>
+                                        <option value="1">Paid</option>
+                                        <option value="2">Unpaid</option>
+                                    </select>
+                                    {errors.status && <p className="mt-2 text-sm text-rose-600">{errors.status}</p>}
                                 </div>
+
                                 <div>
-                                    <span className="block text-xs font-semibold text-gray-400 uppercase">Status</span>
-                                    {selectedInvoice.status === 1 ? (
-                                        <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                            Paid
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                                            Unpaid
-                                        </span>
-                                    )}
+                                    <label className="mb-2 block text-sm font-semibold text-slate-800">Invoice total</label>
+                                    <div className="flex h-11 items-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-lg font-bold text-emerald-700">
+                                        {money(data.total)}
+                                    </div>
+                                    {errors.total && <p className="mt-2 text-sm text-rose-600">{errors.total}</p>}
                                 </div>
                             </div>
 
-                            {/* Connected Orders Sub-table */}
-                            <div>
-                                <h3 className="text-md font-semibold text-gray-800 mb-2">Connected Orders Statement</h3>
-                                <div className="border border-gray-200 rounded overflow-hidden">
-                                    <table className="w-full text-left border-collapse">
+                            <div className="rounded-2xl border border-emerald-50 bg-[#F2F9F5] p-4">
+                                <div className="mb-4 flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="font-bold text-slate-950">Pending orders</h3>
+                                        <p className="mt-1 text-sm text-slate-500">Only orders not attached to another invoice appear here.</p>
+                                    </div>
+                                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 shadow-sm">
+                                        {data.order_ids.length} selected
+                                    </span>
+                                </div>
+
+                                {data.customer_id ? (
+                                    filteredPendingOrders.length > 0 ? (
+                                        <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                                            {filteredPendingOrders.map((order) => (
+                                                <label key={order.id} className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-50 bg-white p-3 shadow-sm transition hover:border-emerald-100 hover:bg-emerald-50/40">
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.order_ids.includes(order.id)}
+                                                            onChange={(e) => toggleOrder(order.id, e.target.checked)}
+                                                            className="rounded border-emerald-200 text-emerald-600 focus:ring-emerald-500"
+                                                        />
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900">{orderNo(order.id)}</p>
+                                                            <p className="mt-1 text-xs font-medium text-slate-400">{formatDate(order.created_at)}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-900">{money(order.total)}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-medium text-amber-700">
+                                            No pending orders found for this customer.
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="rounded-xl border border-emerald-100 bg-white p-6 text-center text-sm font-medium text-slate-500">
+                                        Select a customer to load pending orders.
+                                    </div>
+                                )}
+                                {errors.order_ids && <p className="mt-2 text-sm text-rose-600">{errors.order_ids}</p>}
+                            </div>
+                        </div>
+
+                        <div className="sticky bottom-0 flex justify-end gap-3 border-t border-emerald-50 bg-white px-6 py-4">
+                            <button type="button" onClick={closeAddModal} className="h-11 rounded-xl border border-emerald-100 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-emerald-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={processing || data.order_ids.length === 0}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00A86B] px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-200 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {processing && <i className="fas fa-circle-notch fa-spin text-xs"></i>}
+                                Create Invoice
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+
+                <Modal show={isDetailModalOpen && !!selectedInvoice} onClose={() => setIsDetailModalOpen(false)} maxWidth="5xl">
+                    {selectedInvoice && (
+                        <div className="max-h-[85vh] overflow-y-auto">
+                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-emerald-50 bg-white px-6 py-5">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-950">{invoiceNo(selectedInvoice.id)}</h2>
+                                    <p className="mt-1 text-sm text-slate-500">Issued {formatDate(selectedInvoice.created_at, true)}</p>
+                                </div>
+                                <button type="button" onClick={() => setIsDetailModalOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-700">
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div className="space-y-6 p-6">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                                    <div className="rounded-2xl bg-emerald-50 p-4">
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-emerald-700">Customer</p>
+                                        <p className="mt-2 font-bold text-slate-950">{selectedInvoice.customer?.name || 'Walk-in'}</p>
+                                        <p className="text-sm text-slate-500">{selectedInvoice.customer?.phone || 'No phone'}</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-cyan-50 p-4">
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-cyan-700">Cashier</p>
+                                        <p className="mt-2 font-bold text-slate-950">{selectedInvoice.staff?.name || 'Unknown'}</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-fuchsia-50 p-4">
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-fuchsia-700">Status</p>
+                                        <div className="mt-2">{statusPill(selectedInvoice.status)}</div>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-50 p-4">
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Total</p>
+                                        <p className="mt-2 text-xl font-bold text-slate-950">{money(selectedInvoice.total)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="overflow-hidden rounded-2xl border border-emerald-50">
+                                    <table className="w-full text-left">
                                         <thead>
-                                            <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase">
-                                                <th className="p-3">Order ID</th>
-                                                <th className="p-3">Order Date</th>
-                                                <th className="p-3 text-right">Subtotal</th>
-                                                <th className="p-3 text-right">Discount</th>
-                                                <th className="p-3 text-right">Order Total</th>
+                                            <tr className="border-b border-emerald-50 bg-emerald-50/60 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                                                <th className="px-4 py-3">Order</th>
+                                                <th className="px-4 py-3">Date</th>
+                                                <th className="px-4 py-3 text-right">Subtotal</th>
+                                                <th className="px-4 py-3 text-right">Discount</th>
+                                                <th className="px-4 py-3 text-right">Total</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="text-sm">
-                                            {selectedInvoice.orders && selectedInvoice.orders.length > 0 ? (
-                                                selectedInvoice.orders.map(order => (
-                                                    <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                                        <td className="p-3 font-semibold text-gray-700">
-                                                            #ORD-{String(order.id).padStart(5, '0')}
-                                                        </td>
-                                                        <td className="p-3 text-gray-500">
-                                                            {new Date(order.created_at).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="p-3 text-right text-gray-600">
-                                                            ${parseFloat(order.subtotal).toFixed(2)}
-                                                        </td>
-                                                        <td className="p-3 text-right text-red-500">
-                                                            -${parseFloat(order.discount).toFixed(2)}
-                                                        </td>
-                                                        <td className="p-3 text-right font-bold text-gray-800">
-                                                            ${parseFloat(order.total).toFixed(2)}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
+                                        <tbody className="divide-y divide-emerald-50">
+                                            {selectedInvoice.orders?.length > 0 ? selectedInvoice.orders.map((order) => (
+                                                <tr key={order.id}>
+                                                    <td className="px-4 py-3 font-bold text-slate-900">{orderNo(order.id)}</td>
+                                                    <td className="px-4 py-3 text-sm text-slate-500">{formatDate(order.created_at)}</td>
+                                                    <td className="px-4 py-3 text-right text-sm text-slate-600">{money(order.subtotal)}</td>
+                                                    <td className="px-4 py-3 text-right text-sm text-rose-500">-{money(order.discount)}</td>
+                                                    <td className="px-4 py-3 text-right font-bold text-slate-950">{money(order.total)}</td>
+                                                </tr>
+                                            )) : (
                                                 <tr>
-                                                    <td colSpan="5" className="p-4 text-center text-gray-500">
-                                                        No orders linked to this invoice.
-                                                    </td>
+                                                    <td colSpan="5" className="px-4 py-8 text-center text-sm text-slate-500">No orders linked to this invoice.</td>
                                                 </tr>
                                             )}
                                         </tbody>
-                                        <tfoot>
-                                            <tr className="bg-gray-50 font-bold text-gray-800 border-t border-gray-200">
-                                                <td colSpan="4" className="p-3 text-right">Invoice Total:</td>
-                                                <td className="p-3 text-right text-lg text-blue-700">
-                                                    ${parseFloat(selectedInvoice.total).toFixed(2)}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
                         </div>
+                    )}
+                </Modal>
 
-                        {/* Modal Footer */}
-                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
-                            <button
-                                onClick={() => setIsDetailModalOpen(false)}
-                                className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition"
-                            >
-                                Close Details
-                            </button>
+                <Modal show={isDeleteModalOpen && !!selectedInvoice} onClose={() => setIsDeleteModalOpen(false)} maxWidth="md">
+                    {selectedInvoice && (
+                        <div className="p-6">
+                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                                <i className="fas fa-trash text-lg"></i>
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-950">Delete invoice?</h2>
+                            <p className="mt-2 text-sm text-slate-600">
+                                This will delete {invoiceNo(selectedInvoice.id)} and detach its connected orders.
+                            </p>
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button type="button" onClick={() => setIsDeleteModalOpen(false)} className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                                    Cancel
+                                </button>
+                                <button type="button" onClick={handleDeleteInvoice} className="h-10 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-700">
+                                    Delete
+                                </button>
+                            </div>
                         </div>
-                    </>
-                )}
-            </Modal>
-
-            {/* Delete Invoice Modal */}
-            <Modal show={isDeleteModalOpen && !!selectedInvoice} onClose={() => setIsDeleteModalOpen(false)} maxWidth="md">
-                {selectedInvoice && (
-                    <div className="p-6 relative">
-                        <button
-                            onClick={() => setIsDeleteModalOpen(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
-                        >
-                            <i className="fas fa-times"></i>
-                        </button>
-                        <h2 className="text-xl font-bold mb-4 text-red-600">Delete Invoice</h2>
-                        <p className="text-gray-700 mb-6 font-medium">
-                            Are you sure you want to delete invoice <strong>#INV-{String(selectedInvoice.id).padStart(5, '0')}</strong>? 
-                            This will dissociate connected orders but will not delete the orders themselves.
-                        </p>
-                        
-                        <div className="flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsDeleteModalOpen(false)}
-                                className="px-4 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleDeleteInvoice}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+                    )}
+                </Modal>
+            </section>
         </AdminLayout>
     );
 }

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
-import Breadcrumb from '@/Components/Breadcrumb';
 
 export default function PaymentsIndex({ products = [], customers = [] }) {
     const [productSearch, setProductSearch] = useState('');
@@ -130,64 +129,17 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
         });
     };
 
-    const headWeb = 'POS Terminal';
-    const linksBreadcrumb = [
-        { title: 'Home', url: '/' },
-        { title: headWeb, url: '' }
-    ];
-
     return (
-        <AdminLayout breadcrumb={<Breadcrumb header={headWeb} links={linksBreadcrumb} />}>
-            <Head title={headWeb} />
+        <AdminLayout>
+            <Head title="Payments" />
 
             {/* Global Page Wrapper (mint-themed background) */}
-            <div className="min-h-screen bg-[#F2F9F5] p-4 lg:p-6 font-sans">
-                {/* Global System Header (Top bar) */}
-                <div className="flex flex-col sm:flex-row justify-between items-center bg-white rounded-2xl shadow-sm border border-green-100/50 p-4 mb-6 gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#166534] text-white">
-                            <i className="fas fa-cash-register"></i>
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold text-gray-900 leading-tight">POS Terminal</h1>
-                            <span className="text-[10px] font-semibold tracking-wider text-green-700 uppercase block">Tos Tinh Mart</span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-
-
-                        {/* Notification Bell */}
-                        <button className="relative p-2 text-gray-400 hover:text-green-700 transition-colors">
-                            <i className="fas fa-bell text-lg"></i>
-                            <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </span>
-                        </button>
-
-                        <div className="h-6 w-px bg-gray-200"></div>
-
-                        {/* Profile Avatar Dropdown */}
-                        <div className="flex items-center gap-2 cursor-pointer group">
-                            <img
-                                src="/images/avatar.png"
-                                alt="Cashier Avatar"
-                                className="h-8 w-8 rounded-full object-cover border border-green-200"
-                            />
-                            <span className="text-sm font-semibold text-gray-700 group-hover:text-green-700 transition-colors">
-                                Cashier
-                            </span>
-
-                        </div>
-                    </div>
-                </div>
-
+            <div className="flex min-h-[calc(100vh-66px)] flex-col bg-[#F2F9F5] p-2 pt-2 font-sans lg:h-[calc(100vh-66px)] lg:min-h-0 lg:p-3 lg:pt-3">
                 {/* Primary Split Pane Columns */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="grid flex-1 grid-cols-1 gap-4 lg:min-h-0 lg:grid-cols-12 lg:items-stretch">
 
                     {/* Left Column: Product Catalog Workspace (7 Columns Width) */}
-                    <div className="lg:col-span-7 space-y-6">
+                    <div className="flex flex-col gap-4 lg:col-span-7 lg:min-h-0">
 
                         {/* Top Control Row */}
                         <div className="bg-white rounded-2xl border border-green-100/50 p-4 shadow-xs flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -227,7 +179,7 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                         </div>
 
                         {/* Product Catalog Matrix Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-h-[64vh] pr-1">
+                        <div className="grid grid-cols-1 gap-4 overflow-y-auto pr-1 pb-2 sm:grid-cols-2 md:grid-cols-3 lg:min-h-0 lg:flex-1">
                             {filteredProducts.length > 0 ? (
                                 filteredProducts.map(product => {
                                     const cartItem = cart.find(item => item.id === product.id);
@@ -308,36 +260,39 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                     </div>
 
                     {/* Right Column: The Current Order Checkout Panel Card (5 Columns Width) */}
-                    <div className="lg:col-span-5 bg-white rounded-2xl border border-green-100/50 shadow-lg p-6 flex flex-col justify-between min-h-[calc(100vh-220px)] relative">
-                        <div>
-                            {/* Panel Header */}
-                            <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
-                                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                    <i className="fas fa-shopping-basket text-green-600"></i>
-                                    <span>Current Order</span>
-                                </h2>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                                    {orderSequence}
-                                </span>
-                            </div>
+                    <div className="card d-flex flex-column h-100 mb-0 flex-grow-1 shadow-sm min-h-0 rounded-2xl border border-green-100/50 bg-white lg:col-span-5">
+                        {/* Panel Header */}
+                        <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+                            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                                <i className="fas fa-shopping-basket text-green-600"></i>
+                                <span>Current Order</span>
+                            </h2>
+                            <span className="inline-flex items-center rounded-md border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">
+                                {orderSequence}
+                            </span>
+                        </div>
 
-                            {/* Interactive Cart Item Area */}
-                            <div className="overflow-y-auto max-h-[36vh] space-y-3 mb-6 pr-1">
+                        {/* Interactive Cart Item Area */}
+                        <div
+                            className="flex-grow-1 min-h-0 overflow-auto p-2"
+                            style={{ minHeight: '200px', maxHeight: 'calc(100vh - 420px)' }}
+                        >
+                            <div className="space-y-3">
                                 {cart.length > 0 ? (
                                     cart.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-[#F2F9F5]/40 border border-green-100/50 rounded-xl p-3 shadow-xs">
-                                            <div className="flex-1 min-w-0 pr-3">
-                                                <span className="block font-bold text-gray-800 text-sm truncate">{item.product_title}</span>
-                                                <span className="block text-xs text-green-700 font-semibold mt-0.5">${money(item.product_price)} each</span>
+                                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-green-100/50 bg-[#F2F9F5]/40 p-3 shadow-xs">
+                                            <div className="min-w-0 flex-1 pr-2">
+                                                <span className="block truncate text-sm font-bold text-gray-800">{item.product_title}</span>
+                                                <span className="mt-0.5 block text-xs font-semibold text-green-700">${money(item.product_price)} each</span>
                                             </div>
 
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex shrink-0 items-center gap-2">
                                                 {/* Quantity Adjusters */}
-                                                <div className="flex items-center bg-white border border-green-200 rounded-lg overflow-hidden shadow-xs">
+                                                <div className="flex h-8 items-center overflow-hidden rounded-lg border border-green-200 bg-white shadow-xs">
                                                     <button
                                                         type="button"
                                                         onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                                                        className="px-2.5 py-1 text-xs font-bold text-green-700 hover:bg-green-50 transition-colors"
+                                                        className="flex h-full w-8 items-center justify-center text-xs font-bold text-green-700 transition-colors hover:bg-green-50"
                                                     >
                                                         <i className="fas fa-minus text-[9px]"></i>
                                                     </button>
@@ -345,12 +300,12 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                                                         type="number"
                                                         value={item.quantity}
                                                         onChange={(e) => updateCartQuantity(item.id, e.target.value)}
-                                                        className="w-10 border-0 p-0 text-xs font-bold text-center text-gray-800 focus:ring-0"
+                                                        className="h-full w-10 border-0 p-0 text-center text-xs font-bold text-gray-800 focus:ring-0"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                                                        className="px-2.5 py-1 text-xs font-bold text-green-700 hover:bg-green-50 transition-colors"
+                                                        className="flex h-full w-8 items-center justify-center text-xs font-bold text-green-700 transition-colors hover:bg-green-50"
                                                     >
                                                         <i className="fas fa-plus text-[9px]"></i>
                                                     </button>
@@ -360,7 +315,7 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => removeCartItem(item.id)}
-                                                    className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
                                                     title="Remove item"
                                                 >
                                                     <i className="fas fa-trash-alt text-sm"></i>
@@ -370,11 +325,11 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                                     ))
                                 ) : (
                                     /* Empty State Interface */
-                                    <div className="flex flex-col justify-center items-center py-16 text-center">
-                                        <div className="h-16 w-16 rounded-full bg-green-50 flex items-center justify-center mb-4 text-green-700 border border-green-100">
+                                    <div className="flex min-h-[200px] flex-col items-center justify-center py-10 text-center">
+                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-green-100 bg-green-50 text-green-700">
                                             <i className="fas fa-shopping-basket text-2xl"></i>
                                         </div>
-                                        <p className="text-sm font-semibold text-gray-500 max-w-[240px]">
+                                        <p className="max-w-[240px] text-sm font-semibold text-gray-500">
                                             Cart is empty. Scan or tap a product to add it to the current transaction.
                                         </p>
                                     </div>
@@ -383,13 +338,13 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                         </div>
 
                         {/* Footer Form & Checkout Operations */}
-                        <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+                        <form onSubmit={handleCheckoutSubmit} className="mt-auto flex-shrink-0 space-y-3 border-t border-gray-100 p-4">
 
                             {/* Validation / error checks */}
                             {Object.keys(errors).length > 0 && (
                                 <div className="p-3 rounded-xl bg-red-50 text-xs font-semibold text-red-600 border border-red-100 space-y-1 shadow-sm">
                                     {Object.values(errors).map((err, idx) => (
-                                        <p key={idx}>• {err}</p>
+                                        <p key={idx}>* {err}</p>
                                     ))}
                                 </div>
                             )}

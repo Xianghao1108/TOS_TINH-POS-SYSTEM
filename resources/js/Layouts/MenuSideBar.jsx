@@ -6,8 +6,8 @@ export default function MenuSideBar() {
     const [isExpanded, setIsExpanded] = useState(true);
     const [openDropdowns, setOpenDropdowns] = useState({});
 
-    // Uniform active check helper (exact matches or sub-routes)
-    const isUrlActive = (path) => url === path || url.startsWith(path + '/');
+    // Uniform active check helper (exact matches, sub-routes, or query strings)
+    const isUrlActive = (path) => url === path || url.startsWith(path + '/') || url.startsWith(path + '?');
 
     const toggleDropdown = (label) => {
         if (!isExpanded) setIsExpanded(true);
@@ -172,7 +172,7 @@ export default function MenuSideBar() {
                                             </>
                                         ) : (
                                             <Link
-                                                href={item.path}
+                                                href={item.href || item.path}
                                                 className={`nav-item flex items-center transition-all duration-300 ${currentItemActive ? 'active' : ''}`}
                                                 style={{
                                                     justifyContent: isExpanded ? 'flex-start' : 'center',
