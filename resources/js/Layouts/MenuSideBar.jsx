@@ -29,25 +29,25 @@ export default function MenuSideBar() {
         {
             label: 'Main',
             items: [
-                { path: '/dashboard', icon: 'fas fa-th-large', text: 'Dashboard' },
-                { path: '/orders', icon: 'fas fa-shopping-cart', text: 'Orders' },
+                { path: '/dashboard', href: route('dashboard'), icon: 'fas fa-th-large', text: 'Dashboard' },
+                { path: '/orders', href: route('orders.index'), icon: 'fas fa-shopping-cart', text: 'Orders' },
             ]
         },
         {
             label: 'Management',
             items: [
-                { path: '/products', icon: 'fas fa-box', text: 'Products' },
+                { path: '/products', href: route('products.index'), icon: 'fas fa-box', text: 'Products' },
                 {
                     icon: 'fa-solid fa-layer-group',
                     text: 'Categories',
                     isDropdown: true,
                     subItems: [
-                        { path: '/categories', text: 'Main Categories' },
-                        { path: '/sub-categories', text: 'Sub Categories' },
-                        { path: '/units', text: 'Units' },
-                        { path: '/sizes', text: 'Sizes' },
-                        { path: '/makers', text: 'Maker' },
-                        { path: '/brands', text: 'Brand' },
+                        { path: '/categories', href: route('categories.index'), text: 'Main Categories' },
+                        { path: '/sub-categories', href: route('sub-categories.index'), text: 'Sub Categories' },
+                        { path: '/units', href: route('units.index'), text: 'Units' },
+                        { path: '/sizes', href: route('sizes.index'), text: 'Sizes' },
+                        { path: '/makers', href: route('makers.index'), text: 'Maker' },
+                        { path: '/brands', href: route('brands.index'), text: 'Brand' },
                     ]
                 },
             ]
@@ -55,16 +55,16 @@ export default function MenuSideBar() {
         {
             label: 'Operation',
             items: [
-                { path: '/invoices', icon: 'fas fa-file-invoice-dollar', text: 'Invoices' },
-                { path: '/customers', icon: 'fas fa-user-tag', text: 'Customers' },
+                { path: '/invoices', href: route('invoices.index'), icon: 'fas fa-file-invoice-dollar', text: 'Invoices' },
+                { path: '/customers', href: route('customers.index'), icon: 'fas fa-user-tag', text: 'Customers' },
             ]
         },
         {
             label: 'System',
             items: [
-                { path: '/users', icon: 'fas fa-user-shield', text: 'User List' },
-                { path: '/roles', icon: 'fas fa-users-cog', text: 'Roles & Permissions' },
-                { path: '/settings', icon: 'fas fa-cog', text: 'Settings' },
+                { path: '/users', href: route('users.index'), icon: 'fas fa-user-shield', text: 'User List' },
+                { path: '/roles', href: route('roles.index'), icon: 'fas fa-users-cog', text: 'Roles & Permissions' },
+                { path: '/settings', href: route('settings.index'), icon: 'fas fa-cog', text: 'Settings' },
             ]
         }
     ];
@@ -160,7 +160,7 @@ export default function MenuSideBar() {
                                                         {item.subItems.map((subItem, subIndex) => (
                                                             <li key={subIndex}>
                                                                 <Link
-                                                                    href={subItem.path}
+                                                                    href={subItem.href || subItem.path}
                                                                     className={`nav-sub-item block text-sm py-2 transition-colors duration-200 rounded-md ${isUrlActive(subItem.path) ? 'text-green-700 font-semibold' : 'text-gray-600 hover:text-gray-900'}`}
                                                                 >
                                                                     {subItem.text}

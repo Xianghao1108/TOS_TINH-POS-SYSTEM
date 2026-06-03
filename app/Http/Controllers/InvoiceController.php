@@ -25,7 +25,7 @@ class InvoiceController extends Controller
         }
 
         $invoices = $query->latest()->paginate(15)->withQueryString();
-        $customers = Customer::orderBy('name')->get();
+        $customers = Customer::orderBy('username')->get();
         
         // Fetch any orders that do not belong to an invoice yet
         $pendingOrders = Order::with(['customer', 'staff'])

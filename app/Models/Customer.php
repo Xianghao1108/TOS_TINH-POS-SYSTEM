@@ -14,4 +14,11 @@ class Customer extends Model
         'email',
         'phone',
     ];
+
+    protected $appends = ['name'];
+
+    public function getNameAttribute()
+    {
+        return $this->username;
+    }
 }

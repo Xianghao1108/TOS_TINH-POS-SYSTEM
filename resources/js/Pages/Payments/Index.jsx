@@ -25,28 +25,34 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
     const money = (value) => Number(value || 0).toFixed(2);
     const roundMoney = (value) => Math.round(Number(value || 0) * 100) / 100;
 
+    const getProductImageUrl = (image) => {
+        if (!image) return '';
+        return image.image_url || (image.product_image_title ? `/storage/products/${image.product_image_title}` : '');
+    };
+
     const subtotal = useMemo(() => {
         return cart.reduce((sum, item) => sum + Number(item.product_price) * Number(item.quantity), 0);
     }, [cart]);
 
-    const discountAmount = Math.min(Number(discount || 0), subtotal);
-    const total = Math.max(subtotal - discountAmount, 0);
-    const changeDue = Math.max(Number(cashReceived || 0) - total, 0);
+    const taxAmount = subtotal * 0.11;
+    const discountAmountVal = subtotal * (Number(discount || 0) / 100);
+    const totalPaymentVal = Math.max(subtotal + taxAmount - discountAmountVal, 0);
+    const changeDue = Math.max(Number(cashReceived || 0) - totalPaymentVal, 0);
 
     // Sync form data whenever dependencies change
     useEffect(() => {
         setData(prev => ({
             ...prev,
             subtotal: roundMoney(subtotal),
-            discount: roundMoney(discountAmount),
-            total: roundMoney(total),
+            discount: roundMoney(discountAmountVal),
+            total: roundMoney(totalPaymentVal),
             total_payment: roundMoney(cashReceived),
             items: cart.map(item => ({
                 product_id: item.id,
                 quantity: Number(item.quantity),
             }))
         }));
-    }, [cart, subtotal, discountAmount, total, cashReceived]);
+    }, [cart, subtotal, discountAmountVal, totalPaymentVal, cashReceived]);
 
     // Available categories list
     const categories = ['All Products', 'Beverages', 'Snacks', 'Bakery', 'Dairy', 'Pantry'];
@@ -259,74 +265,88 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                         </div>
                     </div>
 
-                    {/* Right Column: The Current Order Checkout Panel Card (5 Columns Width) */}
-                    <div className="card d-flex flex-column h-100 mb-0 flex-grow-1 shadow-sm min-h-0 rounded-2xl border border-green-100/50 bg-white lg:col-span-5">
+                    {/* Right Column: The Details Order Checkout Panel Card (5 Columns Width) */}
+                    <div className="card d-flex flex-column h-100 mb-0 flex-grow-1 shadow-sm min-h-0 rounded-2xl border border-slate-200/65 bg-white lg:col-span-5">
                         {/* Panel Header */}
-                        <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-                            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                                <i className="fas fa-shopping-basket text-green-600"></i>
-                                <span>Current Order</span>
+                        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
+                            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+                                <i className="fas fa-shopping-basket text-[#00A86B]"></i>
+                                <span>Details Order</span>
                             </h2>
-                            <span className="inline-flex items-center rounded-md border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">
+                            <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
                                 {orderSequence}
                             </span>
                         </div>
 
                         {/* Interactive Cart Item Area */}
                         <div
-                            className="flex-grow-1 min-h-0 overflow-auto p-2"
+                            className="flex-grow-1 min-h-0 overflow-auto p-3 bg-slate-50/50"
                             style={{ minHeight: '200px', maxHeight: 'calc(100vh - 420px)' }}
                         >
                             <div className="space-y-3">
                                 {cart.length > 0 ? (
                                     cart.map(item => (
-                                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-green-100/50 bg-[#F2F9F5]/40 p-3 shadow-xs">
-                                            <div className="min-w-0 flex-1 pr-2">
-                                                <span className="block truncate text-sm font-bold text-gray-800">{item.product_title}</span>
-                                                <span className="mt-0.5 block text-xs font-semibold text-green-700">${money(item.product_price)} each</span>
+                                        <div key={item.id} className="flex items-center p-3 bg-white rounded-xl border border-slate-200/60 shadow-xs hover:shadow-sm transition">
+                                            {/* Trash icon on far left */}
+                                            <button 
+                                                onClick={() => removeCartItem(item.id)} 
+                                                className="text-slate-400 hover:text-rose-500 transition mr-2.5 p-1 flex-shrink-0"
+                                                type="button"
+                                                title="Remove item"
+                                            >
+                                                <i className="fas fa-trash-alt text-sm"></i>
+                                            </button>
+
+                                            {/* Thumbnail Image on the left */}
+                                            <div className="h-11 w-11 rounded-lg overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center border border-slate-100 mr-3">
+                                                {item.images && item.images.length > 0 ? (
+                                                    <img src={getProductImageUrl(item.images[0])} className="h-full w-full object-cover" alt="product thumbnail" />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center bg-green-50 text-green-600">
+                                                        <i className="fas fa-box text-xs"></i>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div className="flex shrink-0 items-center gap-2">
-                                                {/* Quantity Adjusters */}
-                                                <div className="flex h-8 items-center overflow-hidden rounded-lg border border-green-200 bg-white shadow-xs">
+                                            {/* Item name and description (middle) */}
+                                            <div className="flex-1 min-w-0 mr-3">
+                                                <h4 className="font-bold text-slate-800 text-sm truncate" title={item.product_title}>{item.product_title}</h4>
+                                                <p className="text-[11px] text-slate-400 mt-0.5 truncate" title={item.product_description || item.description}>
+                                                    {item.product_description || item.description || 'No description available'}
+                                                </p>
+                                            </div>
+
+                                            {/* Price and quantity incrementer (right) */}
+                                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                                <span className="font-bold text-slate-800 text-xs sm:text-sm">
+                                                    ${money(Number(item.product_price) * item.quantity)}
+                                                </span>
+                                                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden text-[10px]">
                                                     <button
                                                         type="button"
                                                         onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                                                        className="flex h-full w-8 items-center justify-center text-xs font-bold text-green-700 transition-colors hover:bg-green-50"
+                                                        className="px-2 py-0.5 bg-slate-50 hover:bg-slate-150 text-slate-500 transition-colors font-bold"
                                                     >
-                                                        <i className="fas fa-minus text-[9px]"></i>
+                                                        -
                                                     </button>
-                                                    <input
-                                                        type="number"
-                                                        value={item.quantity}
-                                                        onChange={(e) => updateCartQuantity(item.id, e.target.value)}
-                                                        className="h-full w-10 border-0 p-0 text-center text-xs font-bold text-gray-800 focus:ring-0"
-                                                    />
+                                                    <span className="px-2 py-0.5 font-semibold text-slate-700 min-w-[1.25rem] text-center bg-white border-x border-slate-100">
+                                                        {String(item.quantity).padStart(2, '0')}
+                                                    </span>
                                                     <button
                                                         type="button"
                                                         onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                                                        className="flex h-full w-8 items-center justify-center text-xs font-bold text-green-700 transition-colors hover:bg-green-50"
+                                                        className="px-2 py-0.5 bg-slate-50 hover:bg-slate-150 text-slate-500 transition-colors font-bold"
                                                     >
-                                                        <i className="fas fa-plus text-[9px]"></i>
+                                                        +
                                                     </button>
                                                 </div>
-
-                                                {/* Remove Trash icon */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeCartItem(item.id)}
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                                                    title="Remove item"
-                                                >
-                                                    <i className="fas fa-trash-alt text-sm"></i>
-                                                </button>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
                                     /* Empty State Interface */
                                     <div className="flex min-h-[200px] flex-col items-center justify-center py-10 text-center">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-green-100 bg-green-50 text-green-700">
+                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-[#00A86B]">
                                             <i className="fas fa-shopping-basket text-2xl"></i>
                                         </div>
                                         <p className="max-w-[240px] text-sm font-semibold text-gray-500">
@@ -338,74 +358,76 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                         </div>
 
                         {/* Footer Form & Checkout Operations */}
-                        <form onSubmit={handleCheckoutSubmit} className="mt-auto flex-shrink-0 space-y-3 border-t border-gray-100 p-4">
+                        <form onSubmit={handleCheckoutSubmit} className="mt-auto flex-shrink-0 space-y-4 border-t border-slate-100 p-5 bg-white">
 
                             {/* Validation / error checks */}
                             {Object.keys(errors).length > 0 && (
-                                <div className="p-3 rounded-xl bg-red-50 text-xs font-semibold text-red-600 border border-red-100 space-y-1 shadow-sm">
+                                <div className="p-3 rounded-xl bg-rose-50 text-xs font-semibold text-rose-600 border border-rose-100 space-y-1 shadow-sm">
                                     {Object.values(errors).map((err, idx) => (
                                         <p key={idx}>* {err}</p>
                                     ))}
                                 </div>
                             )}
 
-                            {/* Invoice Summary Calculation Panel */}
-                            <div className="bg-[#F2F9F5] border border-green-100 rounded-2xl p-4 space-y-2.5 text-sm shadow-xs">
-                                <div className="flex justify-between text-gray-500 font-semibold">
-                                    <span>Subtotal</span>
-                                    <span>${money(subtotal / 1.1)}</span>
-                                </div>
-                                <div className="flex justify-between text-gray-500 font-semibold">
-                                    <span>Tax (10%)</span>
-                                    <span>${money(subtotal - (subtotal / 1.1))}</span>
-                                </div>
-                                {discountAmount > 0 && (
-                                    <div className="flex justify-between text-red-600 font-semibold">
-                                        <span>Discount</span>
-                                        <span>-${money(discountAmount)}</span>
+                            {/* Details Payment Section */}
+                            <div className="space-y-2">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Details Payment</h3>
+                                <div className="space-y-2 text-xs font-semibold text-slate-500">
+                                    <div className="flex justify-between">
+                                        <span>Sub total</span>
+                                        <span>${money(subtotal)}</span>
                                     </div>
-                                )}
-                                <div className="border-t border-green-200/50 my-1"></div>
-                                <div className="flex justify-between items-baseline font-bold text-gray-900">
-                                    <span className="text-base">Total</span>
-                                    <span className="text-3xl font-extrabold text-[#166534]">${money(total)}</span>
+                                    <div className="flex justify-between">
+                                        <span>Tax (11%)</span>
+                                        <span>${money(taxAmount)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-rose-600">
+                                        <span>Discount </span>
+                                        <span>-${money(discountAmountVal)}</span>
+                                    </div>
+                                    <div className="pt-2.5 border-t border-slate-100 flex justify-between items-center">
+                                        <span className="text-sm font-bold text-slate-800">Total Payment</span>
+                                        <span className="text-2xl font-black text-[#00A86B] tracking-tight">
+                                            ${money(totalPaymentVal)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Auxiliary Quick Action Option Buttons */}
-                            <div className="grid grid-cols-2 gap-3">
+                            {/* Auxiliary Option Buttons */}
+                            <div className="grid grid-cols-2 gap-2.5">
                                 <button
                                     type="button"
                                     onClick={() => setShowCustomerSelect(!showCustomerSelect)}
-                                    className={`flex items-center justify-center gap-2 py-2.5 px-4 border rounded-xl text-sm font-bold transition-all duration-150 ${showCustomerSelect
-                                        ? 'bg-green-50 text-[#166534] border-green-200'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                    className={`flex items-center justify-center gap-2 py-2 px-3 border rounded-xl text-xs font-bold transition ${showCustomerSelect
+                                        ? 'bg-emerald-50 text-[#00A86B] border-emerald-250'
+                                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50'
                                         }`}
                                 >
-                                    <i className="fas fa-user-plus"></i>
+                                    <i className="fas fa-user-plus text-[10px]"></i>
                                     <span>+ Customer</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowDiscountInput(!showDiscountInput)}
-                                    className={`flex items-center justify-center gap-2 py-2.5 px-4 border rounded-xl text-sm font-bold transition-all duration-150 ${showDiscountInput
-                                        ? 'bg-green-50 text-[#166534] border-green-200'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                    className={`flex items-center justify-center gap-2 py-2 px-3 border rounded-xl text-xs font-bold transition ${showDiscountInput
+                                        ? 'bg-emerald-50 text-[#00A86B] border-emerald-250'
+                                        : 'bg-white text-slate-650 border-slate-200 hover:bg-slate-50'
                                         }`}
                                 >
-                                    <i className="fas fa-tag"></i>
+                                    <i className="fas fa-tag text-[10px]"></i>
                                     <span>Discount</span>
                                 </button>
                             </div>
 
                             {/* Conditional Customer Selector */}
                             {showCustomerSelect && (
-                                <div className="p-3 bg-[#F2F9F5]/50 rounded-xl border border-green-100/50 space-y-1.5 shadow-inner">
-                                    <label className="block text-[10px] font-bold text-green-800 uppercase tracking-wider">Link Customer Profile</label>
+                                <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-200/60 space-y-1.5 shadow-sm">
+                                    <label className="block text-[9px] font-bold text-slate-550 uppercase tracking-wider">Link Customer Profile</label>
                                     <select
                                         value={data.customer_id || ''}
                                         onChange={e => setData('customer_id', e.target.value || null)}
-                                        className="w-full bg-white border border-green-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                     >
                                         <option value="">-- Guest Checkout --</option>
                                         {customers.map(c => (
@@ -419,15 +441,15 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
 
                             {/* Conditional Discount Input */}
                             {showDiscountInput && (
-                                <div className="p-3 bg-[#F2F9F5]/50 rounded-xl border border-green-100/50 space-y-1.5 shadow-inner">
-                                    <label className="block text-[10px] font-bold text-green-800 uppercase tracking-wider">Deduct Discount Amount ($)</label>
+                                <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-200/60 space-y-1.5 shadow-sm">
+                                    <label className="block text-[9px] font-bold text-slate-550 uppercase tracking-wider">Custom Discount Percent (%)</label>
                                     <input
                                         type="number"
                                         min="0"
                                         max={subtotal}
                                         step="0.01"
                                         placeholder="0.00"
-                                        className="w-full bg-white border border-green-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                         value={discount}
                                         onChange={(e) => setDiscount(e.target.value)}
                                     />
@@ -435,40 +457,40 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                             )}
 
                             {/* Cash payment drawer */}
-                            <div className="p-4 bg-green-50/40 border border-green-100/50 rounded-2xl space-y-3">
+                            <div className="p-3.5 bg-emerald-50/30 border border-emerald-100/50 rounded-xl space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-sm font-bold text-green-800 flex items-center gap-1.5">
-                                        <i className="fas fa-hand-holding-usd text-green-600"></i>
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <i className="fas fa-hand-holding-usd text-[#00A86B]"></i>
                                         <span>Cash Received ($)</span>
                                     </label>
                                     <input
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        className="w-28 text-right border border-green-200 rounded-lg px-2.5 py-1 text-sm font-bold text-green-950 bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                                        className="w-24 text-right border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                         value={cashReceived}
                                         onChange={(e) => setCashReceived(e.target.value)}
                                         required
                                     />
                                 </div>
-                                <div className="flex justify-between items-center text-sm font-bold text-green-900 border-t border-green-100/50 pt-2.5">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-800 border-t border-slate-100 pt-2">
                                     <span>Change Due</span>
-                                    <span className="text-base text-green-700">${money(changeDue)}</span>
+                                    <span className="text-sm text-[#00A86B]">${money(changeDue)}</span>
                                 </div>
                             </div>
 
-                            {/* Final Checkout Button */}
+                            {/* Place an Order Button */}
                             <button
                                 type="submit"
-                                disabled={processing || cart.length === 0 || Number(cashReceived || 0) < total}
-                                className="w-full bg-[#166534] hover:bg-[#14532d] active:bg-[#0f3d21] text-white py-4 px-4 rounded-2xl font-bold shadow-lg shadow-green-900/10 hover:shadow-green-900/20 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                                disabled={processing || cart.length === 0 || Number(cashReceived || 0) < totalPaymentVal}
+                                className="w-full bg-[#00A86B] hover:bg-emerald-700 active:scale-[0.99] text-white py-3 px-4 rounded-full font-bold shadow-sm shadow-emerald-100 hover:shadow transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:active:scale-100"
                             >
                                 {processing ? (
-                                    <i className="fas fa-circle-notch fa-spin text-lg"></i>
+                                    <i className="fas fa-circle-notch fa-spin text-sm"></i>
                                 ) : (
                                     <>
-                                        <i className="fas fa-money-bill-wave text-lg"></i>
-                                        <span>Complete Payment</span>
+                                        <i className="fas fa-money-bill-wave text-sm"></i>
+                                        <span>Place an Order</span>
                                     </>
                                 )}
                             </button>

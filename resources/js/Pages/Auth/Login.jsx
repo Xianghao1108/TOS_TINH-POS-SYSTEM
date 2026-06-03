@@ -149,18 +149,17 @@ export default function Login({ status, canResetPassword }) {
                                     </>
                                 )}
                             </button>
+                            <div className="mt-4 text-center text-sm text-gray-600">
+                                <span>Don't have an account?</span>
+                                <Link
+                                    href={route('register')}
+                                    className="text-green-700 hover:text-green-800 hover:underline font-semibold ml-1 transition-colors"
+                                >
+                                    Register here
+                                </Link>
+                            </div>
                         </form>
 
-                        {/* Separator */}
-                        <FormSeparator text="OR ACCESS VIA" />
-
-                        {/* Alternative Login Block */}
-                        <AlternativeAccess />
-                    </div>
-
-                    {/* Footer Branding */}
-                    <div className="w-full text-center text-xs text-gray-400 font-medium pt-8">
-                        © Smart Minimart POS · v2.4.0
                     </div>
                 </div>
 

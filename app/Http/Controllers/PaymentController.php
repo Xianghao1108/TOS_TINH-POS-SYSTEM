@@ -109,6 +109,18 @@ class PaymentController extends Controller
                 'discount' => $discount,
                 'total' => $total,
             ]);
+
+            // Automatically generate a paid Invoice for this completed sale
+            $invoice = \App\Models\Invoice::create([
+                'customer_id' => $validated['customer_id'] ?? null,
+                'staff_id' => $request->user()->id,
+                'total' => $total,
+                'status' => 1, // 1 = Paid
+            ]);
+
+            $invoice->orders()->attach($order->id, [
+                'total' => $total,
+            ]);
         });
 
         return redirect()->route('orders.index')->with('success', 'Order created successfully.');
