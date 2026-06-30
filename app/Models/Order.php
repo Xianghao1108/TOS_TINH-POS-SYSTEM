@@ -7,13 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     protected $fillable = [
+        'order_number',
         'customer_id',
         'staff_id',
         'subtotal',
         'discount',
         'total',
+        'total_amount',
+        'currency',
+        'status',
         'total_payment'
     ];
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 
     // One order has many item rows matching your schema map
     public function items()

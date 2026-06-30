@@ -199,11 +199,26 @@ export default function POSInterface({ products = [] }) {
             <div className="w-1/3 flex flex-col h-full bg-white relative shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10">
                 
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 bg-white">
-                    <h2 className="text-2xl font-bold text-gray-800">Current Order</h2>
-                    <p className="text-sm text-gray-500 mt-1 font-medium">
-                        {totalItems} items &middot; Cashier #21
-                    </p>
+                <div className="p-6 border-b border-gray-200 bg-white flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Current Order</h2>
+                        <p className="text-sm text-gray-500 mt-1 font-medium">
+                            {totalItems} items &middot; Cashier #21
+                        </p>
+                    </div>
+                    {cart.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setCart([])}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-205 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition duration-150 shadow-xs cursor-pointer active:scale-95"
+                            title="Clear all items in the cart"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Clear Cart</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Cart Body */}

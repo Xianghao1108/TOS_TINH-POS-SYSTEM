@@ -23,6 +23,8 @@ export default function SettingsIndex({ settings = {} }) {
         low_stock_threshold: settings.low_stock_threshold || '',
         default_checkout_role: settings.default_checkout_role || '1',
         theme_mode: settings.theme_mode || 'light',
+        telegram_bot_token: settings.telegram_bot_token || '',
+        telegram_chat_id: settings.telegram_chat_id || '',
     });
 
     const submit = (e) => {
@@ -61,6 +63,7 @@ export default function SettingsIndex({ settings = {} }) {
         { id: 'general', label: 'General Store Settings', icon: 'fas fa-store text-blue-600' },
         { id: 'receipt', label: 'Receipt & Billing Customization', icon: 'fas fa-receipt text-green-600' },
         { id: 'pos', label: 'POS & Alert Configurations', icon: 'fas fa-sliders-h text-yellow-600' },
+        { id: 'telegram', label: 'Telegram Bot Settings', icon: 'fab fa-telegram text-sky-600' },
         { id: 'backup', label: 'Database Backup & System Tools', icon: 'fas fa-database text-purple-600' },
     ];
 
@@ -288,6 +291,48 @@ export default function SettingsIndex({ settings = {} }) {
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {/* TELEGRAM BOT SETTINGS TAB CONTENT */}
+                            {activeTab === 'telegram' && (
+                                <div className="space-y-4">
+                                    <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Telegram Bot Integration</h2>
+                                    <p className="text-sm text-gray-600">
+                                        Configure your existing Telegram Bot credentials to receive instant notifications when customer payments are confirmed.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Telegram Bot Token</label>
+                                            <input
+                                                type="text"
+                                                value={data.telegram_bot_token}
+                                                onChange={e => setData('telegram_bot_token', e.target.value)}
+                                                placeholder="e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                                                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                                            />
+                                            <span className="block text-[11px] text-gray-400 mt-1">
+                                                Obtained from Telegram's BotFather. Used to authorize requests.
+                                            </span>
+                                            <InputError message={errors.telegram_bot_token} className="mt-1" />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Telegram Chat ID</label>
+                                            <input
+                                                type="text"
+                                                value={data.telegram_chat_id}
+                                                onChange={e => setData('telegram_chat_id', e.target.value)}
+                                                placeholder="e.g. -1001234567890 or 987654321"
+                                                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                                            />
+                                            <span className="block text-[11px] text-gray-400 mt-1">
+                                                Target Telegram user, group, or channel ID where checkout notifications will be dispatched.
+                                            </span>
+                                            <InputError message={errors.telegram_chat_id} className="mt-1" />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 

@@ -26,6 +26,8 @@ class SettingController extends Controller
             'low_stock_threshold' => Setting::get('low_stock_threshold', '5'),
             'default_checkout_role' => Setting::get('default_checkout_role', '1'),
             'theme_mode' => Setting::get('theme_mode', 'light'),
+            'telegram_bot_token' => Setting::get('telegram_bot_token', config('services.telegram.bot_token')),
+            'telegram_chat_id' => Setting::get('telegram_chat_id', config('services.telegram.chat_id')),
         ];
 
         return Inertia::render('Settings/Index', [
@@ -51,10 +53,12 @@ class SettingController extends Controller
             'low_stock_threshold' => 'required|integer|min:0',
             'default_checkout_role' => 'required|in:1,2',
             'theme_mode' => 'required|in:light,dark',
+            'telegram_bot_token' => 'nullable|string|max:255',
+            'telegram_chat_id' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {
-            Setting::set($key, (string) $value);
+            Setting::set($key, (string) ($value ?? ''));
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');

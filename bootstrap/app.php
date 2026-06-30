@@ -33,7 +33,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        //
+        $middleware->validateCsrfTokens(except: [
+            'api/telegram-webhook',
+            'api/send/telegram',
+            'api/payment-webhook',
+            'api/bakong/webhook',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
