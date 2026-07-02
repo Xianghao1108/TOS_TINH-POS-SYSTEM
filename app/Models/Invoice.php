@@ -14,6 +14,7 @@ class Invoice extends Model
         'staff_id',
         'total',
         'status',
+        'payment_method',
     ];
 
     /**

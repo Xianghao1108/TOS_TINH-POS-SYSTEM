@@ -122,8 +122,9 @@ class PaymentApiController extends Controller
                 }
 
                 // 7. Generate KHQR payload
-                $bakongAccountId = config('services.bakong.account_id') 
-                    ?? ($currency === 'KHR' ? 'tos_tinh_store@khr' : 'tos_tinh_store@usd');
+                $bakongAccountId = config('services.bakong.account_id')
+                    ?: config('services.bakong.merchant_id')
+                    ?: ($currency === 'KHR' ? 'tos_tinh_store@khr' : 'tos_tinh_store@usd');
                 $merchantName = config('services.bakong.merchant_name', 'TOS TINH Store');
                 $merchantCity = config('services.bakong.merchant_city', 'Phnom Penh');
                 $expirySeconds = 600; // 10 minutes
@@ -184,6 +185,15 @@ class PaymentApiController extends Controller
         if ($payment->payment_status === 'pending') {
             $apiResult = $this->khqrService->checkTransaction($payment->khqr_md5);
 
+            if ($apiResult && isset($apiResult['error'])) {
+                return response()->json([
+                    'payment_status' => $payment->payment_status,
+                    'order_status' => $payment->order->status,
+                    'verification_status' => $apiResult['error'],
+                    'verification_message' => $apiResult['message'] ?? 'Bakong verification is currently unavailable.',
+                ]);
+            }
+
             if ($apiResult && isset($apiResult['responseCode']) && (int)$apiResult['responseCode'] === 0) {
                 // Payment was completed successfully!
                 $txData = $apiResult['data'] ?? [];
@@ -209,6 +219,7 @@ class PaymentApiController extends Controller
                         'staff_id' => $order->staff_id,
                         'total' => $order->total,
                         'status' => 1, // 1 = Paid
+                        'payment_method' => 'qr',
                     ]);
 
                     $invoice->orders()->attach($order->id, [
@@ -348,6 +359,7 @@ class PaymentApiController extends Controller
                         'staff_id' => $order->staff_id,
                         'total' => $order->total,
                         'status' => 1, // 1 = Paid
+                        'payment_method' => 'qr',
                     ]);
 
                     $invoice->orders()->attach($order->id, [
@@ -471,6 +483,7 @@ class PaymentApiController extends Controller
                         'staff_id' => $order->staff_id,
                         'total' => $order->total,
                         'status' => 1, // 1 = Paid
+                        'payment_method' => 'qr',
                     ]);
 
                     $invoice->orders()->attach($order->id, [

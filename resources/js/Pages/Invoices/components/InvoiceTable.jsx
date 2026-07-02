@@ -1,5 +1,5 @@
 import React from 'react';
-import { money, invoiceNo, formatDate, statusPill } from '../utils/invoiceHelpers';
+import { money, invoiceNo, formatDate, statusPill, paymentMethodPill } from '../utils/invoiceHelpers';
 
 export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelete }) {
     return (
@@ -13,6 +13,7 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                             <th className="px-5 py-4">Customer</th>
                             <th className="px-5 py-4">Cashier</th>
                             <th className="px-5 py-4">Orders</th>
+                            <th className="px-5 py-4">Method</th>
                             <th className="px-5 py-4 text-right">Total</th>
                             <th className="px-5 py-4">Status</th>
                             <th className="px-5 py-4 text-right">Actions</th>
@@ -35,6 +36,7 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                                         {invoice.orders?.length || 0} orders
                                     </span>
                                 </td>
+                                <td className="px-5 py-4">{paymentMethodPill(invoice.payment_method)}</td>
                                 <td className="px-5 py-4 text-right text-base font-bold text-slate-950">{money(invoice.total)}</td>
                                 <td className="px-5 py-4">{statusPill(invoice.status)}</td>
                                 <td className="px-5 py-4">
@@ -53,7 +55,7 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan="7" className="px-5 py-14 text-center text-sm font-medium text-slate-500">
+                                <td colSpan="8" className="px-5 py-14 text-center text-sm font-medium text-slate-500">
                                     No invoices found.
                                 </td>
                             </tr>
@@ -81,6 +83,10 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Total</p>
                                 <p className="mt-1 font-bold text-slate-950">{money(invoice.total)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Method</p>
+                                <div className="mt-1">{paymentMethodPill(invoice.payment_method)}</div>
                             </div>
                         </div>
                         <div className="mt-4 flex gap-2">

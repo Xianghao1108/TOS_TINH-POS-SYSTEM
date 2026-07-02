@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@/Components/Modal';
-import { money, invoiceNo, orderNo, formatDate, statusPill } from '../utils/invoiceHelpers';
+import { money, invoiceNo, orderNo, formatDate, statusPill, paymentMethodPill, paymentMethodLabel } from '../utils/invoiceHelpers';
 
 export function InvoiceDetailModal({ isOpen, onClose, selectedInvoice }) {
     return (
@@ -39,6 +39,14 @@ export function InvoiceDetailModal({ isOpen, onClose, selectedInvoice }) {
                             <div className="rounded-2xl bg-slate-50 p-4">
                                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Total</p>
                                 <p className="mt-2 text-xl font-bold text-slate-950">{money(selectedInvoice.total)}</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-emerald-50 bg-white p-4 shadow-sm">
+                            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Payment Method</p>
+                            <div className="mt-3 flex items-center gap-3">
+                                {paymentMethodPill(selectedInvoice.payment_method)}
+                                <span className="text-sm font-semibold text-slate-600">{paymentMethodLabel(selectedInvoice.payment_method)}</span>
                             </div>
                         </div>
 

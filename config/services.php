@@ -45,7 +45,7 @@ return [
         'api_url' => env('BAKONG_API_URL', 'https://api-bakong.nbc.gov.kh/'),
         'api_token' => env('BAKONG_API_TOKEN'),
         'api_email' => env('BAKONG_API_EMAIL'),
-        'account_id' => env('BAKONG_ACCOUNT_ID', 'seanghav_tuon@bkrt'),
+        'account_id' => env('BAKONG_ACCOUNT_ID', env('BAKONG_MERCHANT_ID', 'seanghav_tuon@bkrt')),
         'merchant_id' => env('BAKONG_MERCHANT_ID', 'MID-123456789'),
         'merchant_name' => env('BAKONG_MERCHANT_NAME', 'TOS TINH Store'),
         'merchant_city' => env('BAKONG_MERCHANT_CITY', 'Phnom Penh'),

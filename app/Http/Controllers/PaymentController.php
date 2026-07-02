@@ -41,6 +41,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'payment_method' => ['required', 'in:cash,card'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'discount' => ['required', 'numeric', 'min:0'],
             'total' => ['required', 'numeric', 'min:0'],
@@ -116,6 +117,7 @@ class PaymentController extends Controller
                 'staff_id' => $request->user()->id,
                 'total' => $total,
                 'status' => 1, // 1 = Paid
+                'payment_method' => $validated['payment_method'],
             ]);
 
             $invoice->orders()->attach($order->id, [

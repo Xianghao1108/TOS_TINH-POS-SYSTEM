@@ -53,6 +53,7 @@ class InvoiceController extends Controller
             'customer_id' => ['required', 'exists:customers,id'],
             'staff_id' => ['required', 'exists:users,id'],
             'status' => ['required', 'in:1,2'],
+            'payment_method' => ['required', 'in:cash,qr,card'],
             'total' => ['required', 'numeric', 'min:0'],
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['exists:orders,id'],
@@ -64,6 +65,7 @@ class InvoiceController extends Controller
                 'staff_id' => $validated['staff_id'],
                 'total' => $validated['total'],
                 'status' => $validated['status'],
+                'payment_method' => $validated['payment_method'],
             ]);
 
             foreach ($validated['order_ids'] as $orderId) {
@@ -88,6 +90,7 @@ class InvoiceController extends Controller
             'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
             'staff_id' => ['sometimes', 'required', 'exists:users,id'],
             'status' => ['required', 'in:1,2'],
+            'payment_method' => ['sometimes', 'required', 'in:cash,qr,card'],
             'total' => ['sometimes', 'required', 'numeric', 'min:0'],
             'order_ids' => ['sometimes', 'required', 'array'],
             'order_ids.*' => ['exists:orders,id'],
@@ -104,6 +107,9 @@ class InvoiceController extends Controller
             }
             if (isset($validated['total'])) {
                 $updateData['total'] = $validated['total'];
+            }
+            if (isset($validated['payment_method'])) {
+                $updateData['payment_method'] = $validated['payment_method'];
             }
 
             $invoice->update($updateData);

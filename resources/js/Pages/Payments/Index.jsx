@@ -34,6 +34,7 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
         setKhqrModalOpen,
         khqrTimeLeft,
         khqrStatus,
+        khqrMessage,
         khqrLoading,
 
         data,
@@ -122,6 +123,7 @@ export default function PaymentsIndex({ products = [], customers = [] }) {
                     khqrPaymentData={khqrPaymentData}
                     khqrStatus={khqrStatus}
                     khqrTimeLeft={khqrTimeLeft}
+                    khqrMessage={khqrMessage}
                     onClose={() => {
                         setKhqrModalOpen(false);
                         setKhqrPaymentData(null);

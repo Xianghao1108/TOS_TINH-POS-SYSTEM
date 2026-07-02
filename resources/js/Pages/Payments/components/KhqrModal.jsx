@@ -6,6 +6,7 @@ export function KhqrModal({
     khqrPaymentData,
     khqrStatus,
     khqrTimeLeft,
+    khqrMessage,
     onClose,
     onDone
 }) {
@@ -38,24 +39,37 @@ export function KhqrModal({
                                     <span>Failed</span>
                                 </span>
                             )}
+                            {khqrStatus === 'verification_failed' && (
+                                <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-rose-100">
+                                    <span>Verification Unavailable</span>
+                                </span>
+                            )}
                         </div>
 
                         {/* QR Code Frame */}
                         <div className="flex flex-col items-center justify-center my-4 w-full">
                             <div className="relative p-4 bg-white border-2 border-slate-200 rounded-3xl shadow-xs overflow-hidden">
-                                {(khqrStatus === 'expired' || khqrStatus === 'failed') && (
+                                {(khqrStatus === 'expired' || khqrStatus === 'failed' || khqrStatus === 'verification_failed') && (
                                     <div className="absolute inset-0 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-10">
                                         <i className="fas fa-exclamation-triangle text-rose-500 text-3xl mb-2"></i>
                                         <span className="text-sm font-bold text-slate-800">
-                                            {khqrStatus === 'expired' ? 'QR Code Expired' : 'Payment Failed'}
+                                            {khqrStatus === 'expired'
+                                                ? 'QR Code Expired'
+                                                : khqrStatus === 'verification_failed'
+                                                    ? 'Bakong Verification Unavailable'
+                                                    : 'Payment Failed'}
                                         </span>
-                                        <span className="text-xs text-slate-450 mt-1">Please close and try again</span>
+                                        <span className="text-xs text-slate-450 mt-1">
+                                            {khqrStatus === 'verification_failed'
+                                                ? (khqrMessage || 'Please check your Bakong production credentials and try again.')
+                                                : 'Please close and try again'}
+                                        </span>
                                     </div>
                                 )}
                                 <img
                                     src={khqrPaymentData.qr_image}
                                     alt="Bakong KHQR"
-                                    className={`w-60 h-60 object-contain rounded-2xl ${(khqrStatus === 'expired' || khqrStatus === 'failed') ? 'blur-xs' : ''}`}
+                                    className={`w-60 h-60 object-contain rounded-2xl ${(khqrStatus === 'expired' || khqrStatus === 'failed' || khqrStatus === 'verification_failed') ? 'blur-xs' : ''}`}
                                 />
                             </div>
 
@@ -100,7 +114,7 @@ export function KhqrModal({
                                 onClick={onClose}
                                 className="w-full border border-slate-200 text-slate-550 hover:bg-slate-50 py-3 px-4 rounded-full font-semibold transition text-sm text-center cursor-pointer bg-white"
                             >
-                                Cancel & Go Back
+                                {khqrStatus === 'verification_failed' ? 'Close' : 'Cancel & Go Back'}
                             </button>
                         </div>
                     </>

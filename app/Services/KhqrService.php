@@ -121,7 +121,7 @@ class KhqrService
         $apiEmail = config('services.bakong.api_email');
 
         if (!$apiUrl || !$apiEmail) {
-            \Illuminate\Support\Facades\Log::warning('Bakong request_token skipped: missing api_url or api_email config');
+            \Illuminate\Support\Facades\Log::warning('Bakong renew_token skipped: missing api_url or api_email config');
             return null;
         }
 
@@ -129,21 +129,33 @@ class KhqrService
 
         return \Illuminate\Support\Facades\Cache::remember('bakong_access_token', 1800, function () use ($apiUrl, $apiEmail) {
             try {
-                $response = \Illuminate\Support\Facades\Http::withoutVerifying()->timeout(5)->post($apiUrl . 'v1/request_token', [
+                $response = \Illuminate\Support\Facades\Http::withoutVerifying()->timeout(5)->post($apiUrl . 'v1/renew_token', [
                     'email' => $apiEmail
                 ]);
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    return $data['access_token'] ?? null;
+                    $token = $data['data']['token'] ?? $data['token'] ?? $data['access_token'] ?? null;
+
+                    if (!empty($token) && (int)($data['responseCode'] ?? 0) === 0) {
+                        return $token;
+                    }
+
+                    \Illuminate\Support\Facades\Log::error('Bakong renew_token returned an application-level error', [
+                        'response_code' => $data['responseCode'] ?? null,
+                        'error_code' => $data['errorCode'] ?? null,
+                        'response_message' => $data['responseMessage'] ?? null,
+                        'body' => $data,
+                    ]);
+                    return null;
                 }
 
-                \Illuminate\Support\Facades\Log::error('Bakong request_token failed', [
+                \Illuminate\Support\Facades\Log::error('Bakong renew_token failed', [
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Bakong request_token exception', ['message' => $e->getMessage()]);
+                \Illuminate\Support\Facades\Log::error('Bakong renew_token exception', ['message' => $e->getMessage()]);
             }
 
             return null;
@@ -157,7 +169,10 @@ class KhqrService
 
         if (!$apiUrl || !$apiToken) {
             \Illuminate\Support\Facades\Log::warning('Bakong verification skipped: No API url or access token available');
-            return null;
+            return [
+                'error' => 'bakong_auth_failed',
+                'message' => 'Bakong authentication is not available. Verify the production email/token configuration.'
+            ];
         }
 
         $apiUrl = rtrim($apiUrl, '/') . '/';
@@ -182,7 +197,11 @@ class KhqrService
                     \Illuminate\Support\Facades\Cache::forget('bakong_access_token');
                     $apiToken = $this->getAccessToken();
                     if (!$apiToken) {
-                        break;
+                        \Illuminate\Support\Facades\Log::warning('Bakong token refresh failed after 401 Unauthorized');
+                        return [
+                            'error' => 'bakong_auth_failed',
+                            'message' => 'Bakong authentication failed while refreshing the access token.'
+                        ];
                     }
                     $attempts++;
                     continue;
@@ -199,6 +218,10 @@ class KhqrService
         }
 
         return null;
+        return [
+            'error' => 'bakong_verification_unavailable',
+            'message' => 'Bakong verification could not be completed right now.'
+        ];
     }
 
     /**

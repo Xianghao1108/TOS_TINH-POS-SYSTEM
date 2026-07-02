@@ -58,6 +58,19 @@ export function InvoiceAddModal({
                             {showSuggestions && customerSearch && (
                                 <div className="absolute left-0 right-0 z-30 mt-1 max-h-48 overflow-y-auto rounded-xl border border-slate-105 bg-white shadow-lg">
                                     {filteredCustomers.length > 0 ? (
+
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-800">Payment Method *</label>
+                                <select
+                                    className={fieldClass(false)}
+                                    value={data.payment_method || 'cash'}
+                                    onChange={(e) => setData('payment_method', e.target.value)}
+                                >
+                                    <option value="cash">Cash</option>
+                                    <option value="qr">QR</option>
+                                    <option value="card">Card</option>
+                                </select>
+                            </div>
                                         filteredCustomers.map((customer) => (
                                             <button
                                                 key={customer.id}

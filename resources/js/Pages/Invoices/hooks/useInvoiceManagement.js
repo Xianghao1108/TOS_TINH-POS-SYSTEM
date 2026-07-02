@@ -16,6 +16,7 @@ export function useInvoiceManagement(auth, invoices = {}, customers = [], pendin
         customer_id: '',
         staff_id: auth?.user?.id || '',
         status: '2',
+        payment_method: 'cash',
         total: '0.00',
         order_ids: [],
     });
@@ -68,6 +69,7 @@ export function useInvoiceManagement(auth, invoices = {}, customers = [], pendin
             customer_id: '',
             staff_id: auth?.user?.id || users[0]?.id || '',
             status: '2',
+            payment_method: 'cash',
             total: '0.00',
             order_ids: [],
         });

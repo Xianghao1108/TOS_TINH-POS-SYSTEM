@@ -21,10 +21,12 @@ export function usePaymentPOS(products = [], customers = []) {
     const [khqrTimeLeft, setKhqrTimeLeft] = useState(600);
     const [khqrStatus, setKhqrStatus] = useState('pending');
     const [khqrLoading, setKhqrLoading] = useState(false);
+    const [khqrMessage, setKhqrMessage] = useState('');
     const [showDebug, setShowDebug] = useState(true);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         customer_id: null,
+        payment_method: 'cash',
         subtotal: 0,
         discount: 0,
         total: 0,
@@ -58,6 +60,7 @@ export function usePaymentPOS(products = [], customers = []) {
     useEffect(() => {
         setData(prev => ({
             ...prev,
+            payment_method: paymentMethod,
             subtotal: roundMoney(subtotal),
             discount: roundMoney(discountAmountVal),
             total: roundMoney(totalPaymentVal),
@@ -67,7 +70,7 @@ export function usePaymentPOS(products = [], customers = []) {
                 quantity: Number(item.quantity),
             }))
         }));
-    }, [cart, subtotal, discountAmountVal, totalPaymentVal, cashReceived]);
+    }, [cart, subtotal, discountAmountVal, totalPaymentVal, cashReceived, paymentMethod]);
 
     // Product search and category filter logic
     const filteredProducts = useMemo(() => {
@@ -150,6 +153,9 @@ export function usePaymentPOS(products = [], customers = []) {
                     setKhqrStatus('paid');
                 } else if (status === 'failed') {
                     setKhqrStatus('failed');
+                } else if (response.data.verification_status) {
+                    setKhqrMessage(response.data.verification_message || 'Bakong verification is unavailable right now.');
+                    setKhqrStatus('verification_failed');
                 }
             } catch (err) {
                 console.error('Polling error:', err);
@@ -178,6 +184,12 @@ export function usePaymentPOS(products = [], customers = []) {
         }
     }, [khqrStatus]);
 
+    useEffect(() => {
+        if (khqrStatus === 'verification_failed' || khqrStatus === 'failed' || khqrStatus === 'expired') {
+            setKhqrLoading(false);
+        }
+    }, [khqrStatus]);
+
     // Simulate webhook payment
     const triggerSimulatePayment = async (statusType) => {
         if (!khqrPaymentData) return;
@@ -195,10 +207,12 @@ export function usePaymentPOS(products = [], customers = []) {
     // Initiate KHQR checkout
     const handleKHQRCheckout = async () => {
         setKhqrLoading(true);
+        setKhqrMessage('');
         try {
             const response = await axios.post('/api/create-payment', {
                 currency: checkoutCurrency,
                 customer_id: data.customer_id,
+                payment_method: 'qr',
                 items: cart.map(item => ({
                     id: item.id,
                     quantity: item.quantity
@@ -265,7 +279,9 @@ export function usePaymentPOS(products = [], customers = []) {
         setKhqrModalOpen,
         khqrTimeLeft,
         khqrStatus,
+        khqrMessage,
         setKhqrStatus,
+        setKhqrMessage,
         khqrLoading,
         showDebug,
         setShowDebug,
