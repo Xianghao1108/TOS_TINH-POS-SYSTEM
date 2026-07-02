@@ -9,6 +9,7 @@ import { InvoiceTable } from './components/InvoiceTable';
 import { InvoiceDetailModal } from './components/InvoiceDetailModal';
 import { InvoiceAddModal } from './components/InvoiceAddModal';
 import { InvoiceDeleteModal } from './components/InvoiceDeleteModal';
+import { InvoiceEditModal } from './components/InvoiceEditModal';
 
 export default function InvoicesIndex({ 
     invoices = {}, 
@@ -23,18 +24,29 @@ export default function InvoicesIndex({
         isAddModalOpen,
         isDetailModalOpen,
         isDeleteModalOpen,
+        isEditModalOpen,
         selectedInvoice,
         customerSearch,
+        editCustomerSearch,
         showSuggestions,
         setShowSuggestions,
+        showEditSuggestions,
+        setShowEditSuggestions,
 
         data,
         setData,
         processing,
         errors,
 
+        editData,
+        setEditData,
+        editProcessing,
+        editErrors,
+
         filteredCustomers,
         filteredPendingOrders,
+        filteredEditCustomers,
+        editAvailableOrders,
         stats,
 
         handleSearch,
@@ -45,8 +57,16 @@ export default function InvoicesIndex({
         handleCustomerSearchChange,
         toggleOrder,
         submitAddInvoice,
+        openEditModal,
+        closeEditModal,
+        selectEditCustomer,
+        handleEditCustomerSearchChange,
+        toggleEditOrder,
+        submitEditInvoice,
         openDetailModal,
+        closeDetailModal,
         openDeleteModal,
+        closeDeleteModal,
         handleToggleStatus,
         handleDeleteInvoice
     } = useInvoiceManagement(
@@ -141,6 +161,7 @@ export default function InvoicesIndex({
                             <InvoiceTable
                                 invoiceList={invoiceList}
                                 onView={openDetailModal}
+                                onEdit={openEditModal}
                                 onToggleStatus={handleToggleStatus}
                                 onDelete={openDeleteModal}
                             />
@@ -187,17 +208,37 @@ export default function InvoicesIndex({
                     users={users}
                 />
 
+                {/* Edit Invoice Modal */}
+                <InvoiceEditModal
+                    isOpen={isEditModalOpen}
+                    onClose={closeEditModal}
+                    onSubmit={submitEditInvoice}
+                    data={editData}
+                    setData={setEditData}
+                    errors={editErrors}
+                    processing={editProcessing}
+                    customerSearch={editCustomerSearch}
+                    handleCustomerSearchChange={handleEditCustomerSearchChange}
+                    showSuggestions={showEditSuggestions}
+                    setShowSuggestions={setShowEditSuggestions}
+                    filteredCustomers={filteredEditCustomers}
+                    selectCustomer={selectEditCustomer}
+                    availableOrders={editAvailableOrders}
+                    toggleOrder={toggleEditOrder}
+                    users={users}
+                />
+
                 {/* Detail spec sheets modal */}
                 <InvoiceDetailModal
                     isOpen={isDetailModalOpen}
-                    onClose={() => setIsDetailModalOpen(false)}
+                    onClose={closeDetailModal}
                     selectedInvoice={selectedInvoice}
                 />
 
                 {/* Delete verification modal */}
                 <InvoiceDeleteModal
                     isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
+                    onClose={closeDeleteModal}
                     onSubmit={handleDeleteInvoice}
                     selectedInvoice={selectedInvoice}
                 />

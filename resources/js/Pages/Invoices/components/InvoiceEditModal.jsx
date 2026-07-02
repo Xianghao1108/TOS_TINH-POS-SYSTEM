@@ -2,7 +2,7 @@ import React from 'react';
 import Modal from '@/Components/Modal';
 import { money, orderNo, formatDate, fieldClass } from '../utils/invoiceHelpers';
 
-export function InvoiceAddModal({
+export function InvoiceEditModal({
     isOpen,
     onClose,
     onSubmit,
@@ -16,7 +16,7 @@ export function InvoiceAddModal({
     setShowSuggestions,
     filteredCustomers = [],
     selectCustomer,
-    filteredPendingOrders = [],
+    availableOrders = [],
     toggleOrder,
     users = []
 }) {
@@ -26,11 +26,11 @@ export function InvoiceAddModal({
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b border-emerald-50 bg-white px-6 py-5">
                     <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-                            <i className="fas fa-receipt text-lg"></i>
+                            <i className="fas fa-edit text-lg"></i>
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-950">Create Invoice</h2>
-                            <p className="mt-1 text-sm text-slate-500">Select a customer, cashier, and pending orders.</p>
+                            <h2 className="text-xl font-bold text-slate-950">Edit Invoice</h2>
+                            <p className="mt-1 text-sm text-slate-500">Modify invoice details, status, payment method, and linked orders.</p>
                         </div>
                     </div>
                     <button 
@@ -132,12 +132,12 @@ export function InvoiceAddModal({
                         </div>
                     </div>
 
-                    {/* Pending Orders Checklist */}
+                    {/* Orders Checklist */}
                     <div className="border-t border-emerald-50 pt-6">
                         <div className="mb-4 flex items-center justify-between">
                             <div>
-                                <h3 className="font-bold text-slate-950">Pending orders</h3>
-                                <p className="mt-1 text-sm text-slate-500">Only orders not attached to another invoice appear here.</p>
+                                <h3 className="font-bold text-slate-950">Linked and Pending orders</h3>
+                                <p className="mt-1 text-sm text-slate-500">Orders currently linked to this invoice plus available pending orders for this customer.</p>
                             </div>
                             <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 shadow-sm border border-slate-200">
                                 {data.order_ids.length} selected
@@ -145,9 +145,9 @@ export function InvoiceAddModal({
                         </div>
 
                         {data.customer_id ? (
-                            filteredPendingOrders.length > 0 ? (
+                            availableOrders.length > 0 ? (
                                 <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                                    {filteredPendingOrders.map((order) => (
+                                    {availableOrders.map((order) => (
                                         <label 
                                             key={order.id} 
                                             className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-50 bg-white p-3 shadow-sm transition hover:border-emerald-100 hover:bg-emerald-50/40"
@@ -170,12 +170,12 @@ export function InvoiceAddModal({
                                 </div>
                             ) : (
                                 <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-medium text-amber-700">
-                                    No pending orders found for this customer.
+                                    No pending or linked orders found for this customer.
                                 </div>
                             )
                         ) : (
                             <div className="rounded-xl border border-emerald-100 bg-white p-6 text-center text-sm font-medium text-slate-500 shadow-xs">
-                                Select a customer to load pending orders.
+                                Select a customer to load orders.
                             </div>
                         )}
                         {errors.order_ids && <p className="mt-2 text-sm text-rose-600">{errors.order_ids}</p>}
@@ -193,10 +193,10 @@ export function InvoiceAddModal({
                     <button
                         type="submit"
                         disabled={processing || data.order_ids.length === 0}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00A86B] px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-200 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 border-0 cursor-pointer"
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm shadow-amber-200 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60 border-0 cursor-pointer"
                     >
                         {processing && <i className="fas fa-circle-notch fa-spin text-xs"></i>}
-                        Create Invoice
+                        Save Changes
                     </button>
                 </div>
             </form>

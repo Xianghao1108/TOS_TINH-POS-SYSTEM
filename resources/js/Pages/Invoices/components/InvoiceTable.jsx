@@ -1,7 +1,7 @@
 import React from 'react';
 import { money, invoiceNo, formatDate, statusPill, paymentMethodPill } from '../utils/invoiceHelpers';
 
-export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelete }) {
+export function InvoiceTable({ invoiceList = [], onView, onEdit, onToggleStatus, onDelete }) {
     return (
         <div className="w-full text-left">
             {/* Desktop Table View */}
@@ -9,46 +9,49 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-emerald-50 bg-emerald-50/50 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                            <th className="px-5 py-4">Invoice</th>
-                            <th className="px-5 py-4">Customer</th>
-                            <th className="px-5 py-4">Cashier</th>
-                            <th className="px-5 py-4">Orders</th>
-                            <th className="px-5 py-4">Method</th>
-                            <th className="px-5 py-4 text-right">Total</th>
-                            <th className="px-5 py-4">Status</th>
-                            <th className="px-5 py-4 text-right">Actions</th>
+                            <th className="px-2 py-3">Invoice</th>
+                            <th className="px-2 py-3">Customer</th>
+                            <th className="px-2 py-3">Cashier</th>
+                            <th className="px-2 py-3">Orders</th>
+                            <th className="px-2 py-3">Method</th>
+                            <th className="px-2 py-3 text-right">Total</th>
+                            <th className="px-2 py-3">Status</th>
+                            <th className="px-2 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-emerald-50">
                         {invoiceList.length > 0 ? invoiceList.map((invoice) => (
                             <tr key={invoice.id} className="transition hover:bg-emerald-50/30">
-                                <td className="px-5 py-4">
-                                    <p className="font-bold text-slate-950">{invoiceNo(invoice.id)}</p>
-                                    <p className="mt-1 text-xs font-medium text-slate-400">{formatDate(invoice.created_at)}</p>
+                                <td className="px-2 py-3">
+                                    <p className="font-bold text-slate-950 text-xs">{invoiceNo(invoice.id)}</p>
+                                    <p className="mt-0.5 text-[10px] font-medium text-slate-400">{formatDate(invoice.created_at)}</p>
                                 </td>
-                                <td className="px-5 py-4">
+                                <td className="px-2 py-3 text-xs">
                                     <p className="font-semibold text-slate-800">{invoice.customer?.name || 'Walk-in Customer'}</p>
-                                    <p className="mt-1 text-xs text-slate-400">{invoice.customer?.phone || 'No phone'}</p>
+                                    <p className="mt-0.5 text-[10px] text-slate-400">{invoice.customer?.phone || 'No phone'}</p>
                                 </td>
-                                <td className="px-5 py-4 text-sm font-medium text-slate-600">{invoice.staff?.name || 'Unknown'}</td>
-                                <td className="px-5 py-4">
-                                    <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+                                <td className="px-2 py-3 text-xs font-medium text-slate-600">{invoice.staff?.name || 'Unknown'}</td>
+                                <td className="px-2 py-3">
+                                    <span className="rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500">
                                         {invoice.orders?.length || 0} orders
                                     </span>
                                 </td>
-                                <td className="px-5 py-4">{paymentMethodPill(invoice.payment_method)}</td>
-                                <td className="px-5 py-4 text-right text-base font-bold text-slate-950">{money(invoice.total)}</td>
-                                <td className="px-5 py-4">{statusPill(invoice.status)}</td>
-                                <td className="px-5 py-4">
-                                    <div className="flex justify-end gap-2">
-                                        <button onClick={() => onView(invoice)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition hover:bg-cyan-50 hover:text-cyan-600 cursor-pointer" title="View invoice" type="button">
-                                            <i className="fas fa-eye text-sm"></i>
+                                <td className="px-2 py-3">{paymentMethodPill(invoice.payment_method)}</td>
+                                <td className="px-2 py-3 text-right text-sm font-bold text-slate-950">{money(invoice.total)}</td>
+                                <td className="px-2 py-3">{statusPill(invoice.status)}</td>
+                                <td className="px-2 py-3">
+                                    <div className="flex justify-end gap-1.5">
+                                        <button onClick={() => onView(invoice)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white px-2.5 text-[11px] font-bold text-slate-500 transition hover:bg-cyan-50 hover:text-cyan-600 cursor-pointer" title="View invoice" type="button">
+                                            <i className="fas fa-eye text-[10px]"></i> View
                                         </button>
-                                        <button onClick={() => onToggleStatus(invoice)} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer" type="button">
+                                        <button onClick={() => onEdit(invoice)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white px-2.5 text-[11px] font-bold text-slate-500 transition hover:bg-amber-50 hover:text-amber-600 cursor-pointer" title="Edit invoice" type="button">
+                                            <i className="fas fa-edit text-[10px]"></i> Edit
+                                        </button>
+                                        <button onClick={() => onToggleStatus(invoice)} className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer" type="button">
                                             {invoice.status === 1 ? 'Mark unpaid' : 'Mark paid'}
                                         </button>
-                                        <button onClick={() => onDelete(invoice)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-600 transition hover:bg-rose-100 cursor-pointer" title="Delete invoice" type="button">
-                                            <i className="fas fa-trash text-sm"></i>
+                                        <button onClick={() => onDelete(invoice)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50 px-2.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 cursor-pointer" title="Delete invoice" type="button">
+                                            <i className="fas fa-trash text-[10px]"></i> Delete
                                         </button>
                                     </div>
                                 </td>
@@ -91,11 +94,12 @@ export function InvoiceTable({ invoiceList = [], onView, onToggleStatus, onDelet
                         </div>
                         <div className="mt-4 flex gap-2">
                             <button onClick={() => onView(invoice)} className="h-10 flex-1 rounded-xl bg-cyan-50 text-sm font-bold text-cyan-700 cursor-pointer border-0">View</button>
+                            <button onClick={() => onEdit(invoice)} className="h-10 flex-1 rounded-xl bg-amber-50 text-sm font-bold text-amber-700 cursor-pointer border-0">Edit</button>
                             <button onClick={() => onToggleStatus(invoice)} className="h-10 flex-1 rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 cursor-pointer border-0">
                                 {invoice.status === 1 ? 'Unpaid' : 'Paid'}
                             </button>
-                            <button onClick={() => onDelete(invoice)} className="h-10 w-11 rounded-xl bg-rose-50 text-rose-600 cursor-pointer border-0">
-                                <i className="fas fa-trash text-sm"></i>
+                            <button onClick={() => onDelete(invoice)} className="h-10 flex-1 rounded-xl bg-rose-50 text-sm font-bold text-rose-700 cursor-pointer border-0 flex items-center justify-center gap-1.5">
+                                <i className="fas fa-trash text-xs"></i> Delete
                             </button>
                         </div>
                     </article>
