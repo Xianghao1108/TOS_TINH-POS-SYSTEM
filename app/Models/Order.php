@@ -16,7 +16,9 @@ class Order extends Model
         'total_amount',
         'currency',
         'status',
-        'total_payment'
+        'total_payment',
+        'payment_method',
+        'transaction_reference'
     ];
 
     public function payments()

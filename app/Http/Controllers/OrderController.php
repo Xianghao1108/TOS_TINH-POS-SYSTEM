@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,6 +28,36 @@ class OrderController extends Controller
             'orders' => $query->latest()->paginate(15)->withQueryString(),
             'filters' => $request->only('search')
         ]);
+    }
+
+    /**
+     * Store a newly created order in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'order_number' => ['required', 'string', 'max:255', 'unique:orders,order_number'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
+            'staff_id' => ['required', 'exists:users,id'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'total' => ['required', 'numeric', 'min:0'],
+            'total_amount' => ['required', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'max:10'],
+            'status' => ['required', 'string', 'max:50'],
+            'total_payment' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'string', 'in:Cash,Credit Card,KHQR'],
+            'transaction_reference' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $order = DB::transaction(function () use ($validated) {
+            return Order::create($validated);
+        });
+
+        return response()->json([
+            'message' => 'Order created successfully.',
+            'order' => $order,
+        ], 201);
     }
 
     /**

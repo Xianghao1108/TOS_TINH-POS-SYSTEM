@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PaymentApiController;
 
@@ -23,6 +24,7 @@ Route::post('/create-payment', [PaymentApiController::class, 'createPayment']);
 Route::get('/payment-status/{payment_id}', [PaymentApiController::class, 'getPaymentStatus']);
 Route::post('/bakong/webhook', [PaymentApiController::class, 'bakongWebhook']);
 Route::post('/payment-webhook', [PaymentApiController::class, 'simulateWebhook']);
+Route::post('/orders', [OrderController::class, 'store']);
 
 // Migrated Telegram Webhook routes
 Route::post('/telegram-webhook', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleWebhook']);
