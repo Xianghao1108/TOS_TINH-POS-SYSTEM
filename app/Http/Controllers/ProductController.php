@@ -9,12 +9,18 @@ use App\Models\Size;
 use App\Models\Unit;
 use App\Models\Maker;
 use App\Models\Brand;
+use App\Services\Notification\TelegramStockAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly TelegramStockAlertService $telegramStockAlertService
+    ) {
+    }
+
     public function index(Request $request)
     {
         // Eager load the new images collection alongside parameters
@@ -103,6 +109,10 @@ class ProductController extends Controller
         ]);
 
         $product->update($validated);
+
+        if ((int) $validated['product_stock'] <= 5) {
+            $this->telegramStockAlertService->sendLowStockAlert($product->fresh());
+        }
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {

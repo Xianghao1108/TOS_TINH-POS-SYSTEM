@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Services\Notification\TelegramStockAlertService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,11 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
+    public function __construct(
+        private readonly TelegramStockAlertService $telegramStockAlertService
+    ) {
+    }
+
     /**
      * Display the POS checkout terminal.
      */
@@ -51,7 +57,9 @@ class PaymentController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        $lowStockProductIds = [];
+
+        DB::transaction(function () use ($validated, $request, &$lowStockProductIds) {
             $items = collect($validated['items']);
             $subtotal = 0;
 
@@ -93,7 +101,12 @@ class PaymentController extends Controller
                     'quantity' => $item['quantity'],
                 ]);
 
+                $remainingStock = (int) $product->product_stock - (int) $item['quantity'];
                 $product->decrement('product_stock', $item['quantity']);
+
+                if ($remainingStock <= 5) {
+                    $lowStockProductIds[$product->id] = true;
+                }
             }
 
             $discount = min((float) $validated['discount'], $subtotal);
@@ -124,6 +137,14 @@ class PaymentController extends Controller
                 'total' => $total,
             ]);
         });
+
+        foreach (array_keys($lowStockProductIds) as $productId) {
+            $product = Product::find($productId);
+
+            if ($product) {
+                $this->telegramStockAlertService->sendLowStockAlert($product);
+            }
+        }
 
         return redirect()->route('orders.index')->with('success', 'Order created successfully.');
     }

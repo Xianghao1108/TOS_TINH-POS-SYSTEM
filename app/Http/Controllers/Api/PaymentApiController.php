@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Invoice;
 use App\Services\KhqrService;
+use App\Services\Notification\TelegramStockAlertService;
 use App\Services\Notification\INotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,11 +21,17 @@ class PaymentApiController extends Controller
 {
     protected KhqrService $khqrService;
     protected INotificationService $notificationService;
+    protected TelegramStockAlertService $telegramStockAlertService;
 
-    public function __construct(KhqrService $khqrService, INotificationService $notificationService)
+    public function __construct(
+        KhqrService $khqrService,
+        INotificationService $notificationService,
+        TelegramStockAlertService $telegramStockAlertService
+    )
     {
         $this->khqrService = $khqrService;
         $this->notificationService = $notificationService;
+        $this->telegramStockAlertService = $telegramStockAlertService;
     }
 
     /**
@@ -42,9 +49,10 @@ class PaymentApiController extends Controller
 
         $currency = $validated['currency'];
         $items = $validated['items'];
+        $lowStockProductIds = [];
 
         try {
-            $response = DB::transaction(function () use ($currency, $items, $validated, $request) {
+            $response = DB::transaction(function () use ($currency, $items, $validated, $request, &$lowStockProductIds) {
                 $subtotalUsd = 0;
                 $orderItemsData = [];
 
@@ -118,7 +126,12 @@ class PaymentApiController extends Controller
                         'quantity' => $itemData['quantity'],
                     ]);
 
+                    $remainingStock = (int) $itemData['product']->product_stock - (int) $itemData['quantity'];
                     $itemData['product']->decrement('product_stock', $itemData['quantity']);
+
+                    if ($remainingStock <= 5) {
+                        $lowStockProductIds[$itemData['product']->id] = true;
+                    }
                 }
 
                 // 7. Generate KHQR payload
@@ -159,6 +172,14 @@ class PaymentApiController extends Controller
                     'expiry_ms' => $khqrData['expiry_ms'],
                 ];
             });
+
+            foreach (array_keys($lowStockProductIds) as $productId) {
+                $product = Product::find($productId);
+
+                if ($product) {
+                    $this->telegramStockAlertService->sendLowStockAlert($product);
+                }
+            }
 
             return response()->json($response, 201);
 
