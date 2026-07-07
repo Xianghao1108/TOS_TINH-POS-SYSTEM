@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
 import Breadcrumb from '@/Components/Breadcrumb';
 import InputError from '@/Components/InputError';
+import SalesReportSettings from './components/SalesReportSettings';
 
 export default function SettingsIndex({ settings = {} }) {
     const [activeTab, setActiveTab] = useState('general');
@@ -25,6 +26,8 @@ export default function SettingsIndex({ settings = {} }) {
         theme_mode: settings.theme_mode || 'light',
         telegram_bot_token: settings.telegram_bot_token || '',
         telegram_chat_id: settings.telegram_chat_id || '',
+        telegram_report_bot_token: settings.telegram_report_bot_token || '',
+        telegram_report_chat_id: settings.telegram_report_chat_id || '',
     });
 
     const submit = (e) => {
@@ -64,6 +67,7 @@ export default function SettingsIndex({ settings = {} }) {
         { id: 'receipt', label: 'Receipt & Billing Customization', icon: 'fas fa-receipt text-green-600' },
         { id: 'pos', label: 'POS & Alert Configurations', icon: 'fas fa-sliders-h text-yellow-600' },
         { id: 'telegram', label: 'Telegram Bot Settings', icon: 'fab fa-telegram text-sky-600' },
+        { id: 'reports', label: 'Sales Report Settings', icon: 'fas fa-chart-line text-rose-500' },
         { id: 'backup', label: 'Database Backup & System Tools', icon: 'fas fa-database text-purple-600' },
     ];
 
@@ -375,6 +379,11 @@ export default function SettingsIndex({ settings = {} }) {
                                         </div>
                                     )}
                                 </div>
+                            )}
+
+                            {/* SALES REPORT TAB CONTENT */}
+                            {activeTab === 'reports' && (
+                                <SalesReportSettings data={data} setData={setData} errors={errors} />
                             )}
 
                             {/* Submit Save Button for Settings Form */}

@@ -29,3 +29,5 @@ Route::post('/orders', [OrderController::class, 'store']);
 // Migrated Telegram Webhook routes
 Route::post('/telegram-webhook', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleWebhook']);
 Route::post('/send/telegram', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleOriginalBotCommands']);
+
+Route::post('/reports/trigger-now', [\App\Http\Controllers\Api\ReportApiController::class, 'triggerNow']);

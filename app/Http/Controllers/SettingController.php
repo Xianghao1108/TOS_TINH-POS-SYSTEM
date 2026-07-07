@@ -28,6 +28,8 @@ class SettingController extends Controller
             'theme_mode' => Setting::get('theme_mode', 'light'),
             'telegram_bot_token' => Setting::get('telegram_bot_token', config('services.telegram.bot_token')),
             'telegram_chat_id' => Setting::get('telegram_chat_id', config('services.telegram.chat_id')),
+            'telegram_report_bot_token' => Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token')),
+            'telegram_report_chat_id' => Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id')),
         ];
 
         return Inertia::render('Settings/Index', [
@@ -55,6 +57,8 @@ class SettingController extends Controller
             'theme_mode' => 'required|in:light,dark',
             'telegram_bot_token' => 'nullable|string|max:255',
             'telegram_chat_id' => 'nullable|string|max:255',
+            'telegram_report_bot_token' => 'nullable|string|max:255',
+            'telegram_report_chat_id' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {

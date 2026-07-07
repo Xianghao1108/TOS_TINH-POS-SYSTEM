@@ -38,4 +38,15 @@ php artisan config:cache
 # Run the queue worker:
 php artisan queue:work
 
+### Step 4: Configure the Server Cron Job
+To keep the Laravel scheduler engine awake and running in your production environment, add this single cron string to your server's crontab configuration using `crontab -e`:
+
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+If you deploy on Windows Server, use Task Scheduler to run `php artisan schedule:run` every 1 minute instead.
+
+Keep a queue worker running in production with Supervisor/systemd or the equivalent process manager on your server.
+
 php artisan make:model YourModelName -mcr

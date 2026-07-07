@@ -70,4 +70,9 @@ return [
         'chat_id' => env('TELEGRAM_STOCK_CHAT_ID'),
     ],
 
+    'telegram_report' => [
+        'bot_token' => env('TELEGRAM_REPORT_BOT_TOKEN'),
+        'chat_id' => env('TELEGRAM_REPORT_CHAT_ID'),
+    ],
+
 ];
