@@ -47,7 +47,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'payment_method' => ['required', 'in:cash,card'],
+            'payment_method' => ['required', 'in:cash'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'discount' => ['required', 'numeric', 'min:0'],
             'total' => ['required', 'numeric', 'min:0'],

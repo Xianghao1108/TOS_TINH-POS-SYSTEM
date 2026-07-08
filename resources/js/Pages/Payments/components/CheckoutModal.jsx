@@ -146,17 +146,7 @@ export function CheckoutModal({
                                 <i className={`fas fa-qrcode text-xl ${paymentMethod === 'qr' ? 'text-[#00A86B]' : 'text-slate-400'}`}></i>
                                 <span className="text-[10px] font-bold">KHQR</span>
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => setPaymentMethod('card')}
-                                className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-2 transition text-center ${paymentMethod === 'card'
-                                    ? 'bg-emerald-50 border-[#00A86B] text-[#00A86B] shadow-xs'
-                                    : 'bg-white border-slate-200 text-slate-650 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <i className={`fas fa-credit-card text-xl ${paymentMethod === 'card' ? 'text-[#00A86B]' : 'text-slate-400'}`}></i>
-                                <span className="text-[10px] font-bold">Card</span>
-                            </button>
+
                         </div>
 
                         {/* Conditional options inputs container */}

@@ -40,10 +40,6 @@ export const paymentMethodLabel = (method) => {
     switch ((method || '').toString().trim().toLowerCase()) {
         case 'qr':
             return 'QR';
-        case 'card':
-        case 'credit card':
-        case 'credit_card':
-            return 'Credit Card';
         case 'cash':
             return 'Cash';
         case 'khqr':
@@ -70,15 +66,6 @@ export const paymentMethodPill = (method) => {
             <span className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
                 QR
-            </span>
-        );
-    }
-
-    if (label === 'Credit Card') {
-        return (
-            <span className="inline-flex items-center gap-2 rounded-full bg-fuchsia-50 px-3 py-1 text-xs font-bold text-fuchsia-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-500"></span>
-                Credit Card
             </span>
         );
     }

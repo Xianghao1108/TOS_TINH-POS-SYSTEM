@@ -46,7 +46,7 @@ class OrderController extends Controller
             'currency' => ['required', 'string', 'max:10'],
             'status' => ['required', 'string', 'max:50'],
             'total_payment' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'string', 'in:Cash,Credit Card,KHQR'],
+            'payment_method' => ['required', 'string', 'in:Cash,KHQR'],
             'transaction_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
