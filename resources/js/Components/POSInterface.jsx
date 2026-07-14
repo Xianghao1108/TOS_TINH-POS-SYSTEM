@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import axios from 'axios';
+
 
 // Example Icon Components (Using simple SVGs to avoid extra dependencies)
 const BarcodeIcon = () => (
@@ -30,6 +32,52 @@ export default function POSInterface({ products = [] }) {
     const [barcodeScan, setBarcodeScan] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [cart, setCart] = useState([]);
+
+    // Secure POS checkout states
+    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+    const [checkoutSuccess, setCheckoutSuccess] = useState('');
+    const [checkoutError, setCheckoutError] = useState('');
+
+    const handleCheckout = async () => {
+        setCheckoutLoading(true);
+        setCheckoutSuccess('');
+        setCheckoutError('');
+
+        const token = localStorage.getItem('auth_token');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+
+        const payload = {
+            payment_method: paymentMethod,
+            items: cart.map(item => ({
+                product_id: item.id,
+                quantity: item.quantity
+            }))
+        };
+
+        try {
+            const response = await axios.post('/api/invoices/checkout', payload, { headers });
+            
+            if (response.data.success) {
+                setCheckoutSuccess(`Checkout completed successfully! Invoice ${response.data.invoice.invoice_number} created.`);
+                setCart([]); // Clear local cart state upon server success
+                setTimeout(() => {
+                    setIsCheckoutOpen(false);
+                    setCheckoutSuccess('');
+                }, 3000);
+            }
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || 'Failed to process checkout. Please try again.';
+            setCheckoutError(errorMsg);
+        } finally {
+            setCheckoutLoading(false);
+        }
+    };
+
 
     // Extract unique categories from products
     const categories = useMemo(() => {
@@ -284,6 +332,7 @@ export default function POSInterface({ products = [] }) {
                     
                     {/* Action Button */}
                     <button 
+                        onClick={() => setIsCheckoutOpen(true)}
                         className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all duration-200 transform ${
                             cart.length > 0 
                             ? 'bg-green-600 hover:bg-green-700 text-white hover:shadow-green-500/30 hover:-translate-y-0.5 active:translate-y-0' 
@@ -296,6 +345,145 @@ export default function POSInterface({ products = [] }) {
                 </div>
 
             </div>
+
+            {/* Checkout Slide-over/Modal Confirmation Panel */}
+            {isCheckoutOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+                    <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800">Checkout Confirmation</h3>
+                                <p className="text-xs text-slate-400 font-medium mt-0.5">Please confirm items and choose payment</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setIsCheckoutOpen(false);
+                                    setCheckoutSuccess('');
+                                    setCheckoutError('');
+                                }}
+                                className="text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8 overflow-y-auto space-y-6 flex-1">
+                            
+                            {/* Banners */}
+                            {checkoutSuccess && (
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-sm font-semibold flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{checkoutSuccess}</span>
+                                </div>
+                            )}
+
+                            {checkoutError && (
+                                <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-sm font-semibold flex items-start gap-3">
+                                    <svg className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span>{checkoutError}</span>
+                                </div>
+                            )}
+
+                            {/* Cart Summary */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Order Summary</h4>
+                                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 divide-y divide-slate-200/60 max-h-[200px] overflow-y-auto">
+                                    {cart.map(item => (
+                                        <div key={item.id} className="flex justify-between py-2.5 first:pt-0 last:pb-0 text-sm">
+                                            <span className="font-semibold text-slate-700 truncate max-w-[280px]">
+                                                {item.name} <span className="text-slate-400 font-normal">&times; {item.quantity}</span>
+                                            </span>
+                                            <span className="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Payment Selector */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Payment Method</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setPaymentMethod('cash')}
+                                        className={`p-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center justify-center gap-2 ${
+                                            paymentMethod === 'cash'
+                                            ? 'border-green-600 bg-green-50/50 text-green-700'
+                                            : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                                        }`}
+                                    >
+                                        <i className="fas fa-money-bill-wave text-xl"></i>
+                                        <span>Cash</span>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setPaymentMethod('aba_qr')}
+                                        className={`p-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center justify-center gap-2 ${
+                                            paymentMethod === 'aba_qr'
+                                            ? 'border-green-600 bg-green-50/50 text-green-700'
+                                            : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                                        }`}
+                                    >
+                                        <i className="fas fa-qrcode text-xl"></i>
+                                        <span>ABA QR</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Summary Math */}
+                            <div className="p-5 bg-green-600 text-white rounded-2xl shadow-md space-y-2">
+                                <div className="flex justify-between text-xs font-semibold text-green-100">
+                                    <span>Subtotal + Tax</span>
+                                    <span>${subtotal.toFixed(2)} + ${tax.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <span className="font-bold text-sm">Amount Due</span>
+                                    <span className="text-3xl font-extrabold tracking-tight">${total.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsCheckoutOpen(false);
+                                    setCheckoutSuccess('');
+                                    setCheckoutError('');
+                                }}
+                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 transition active:scale-98"
+                                disabled={checkoutLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCheckout}
+                                className="flex-1 py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition flex items-center justify-center gap-2 active:scale-98 shadow-md"
+                                disabled={checkoutLoading}
+                            >
+                                {checkoutLoading ? (
+                                    <>
+                                        <i className="fas fa-spinner animate-spin"></i>
+                                        <span>Processing...</span>
+                                    </>
+                                ) : (
+                                    <span>Complete Checkout</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

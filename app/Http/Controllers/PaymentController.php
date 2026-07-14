@@ -70,6 +70,7 @@ class PaymentController extends Controller
                 'discount' => $validated['discount'],
                 'total' => 0,
                 'total_payment' => $validated['total_payment'],
+                'payment_method' => $validated['payment_method'],
             ]);
 
             foreach ($items as $item) {

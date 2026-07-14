@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\ReportApiController;
 use App\Http\Controllers\Api\TelegramBotController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -38,4 +39,5 @@ Route::post('/reports/trigger-now', [ReportApiController::class, 'triggerNow']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/telegram', [SettingController::class, 'getTelegramSettings']);
     Route::post('/settings/telegram/update', [SettingController::class, 'updateTelegramSettings']);
+    Route::post('/invoices/checkout', [InvoiceController::class, 'checkout']);
 });

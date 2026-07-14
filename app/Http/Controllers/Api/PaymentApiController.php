@@ -116,6 +116,7 @@ class PaymentApiController extends Controller
                     'currency' => $currency,
                     'status' => 'pending',
                     'total_payment' => 0.00,
+                    'payment_method' => 'KHQR',
                 ]);
 
                 // 6. Create Order Items & Decrement Stock

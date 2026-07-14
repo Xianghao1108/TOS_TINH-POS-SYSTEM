@@ -56,6 +56,7 @@ class KhqrPaymentTest extends TestCase
         ]);
 
         $response->assertStatus(201)
+
             ->assertJsonStructure([
                 'payment_id',
                 'order_number',

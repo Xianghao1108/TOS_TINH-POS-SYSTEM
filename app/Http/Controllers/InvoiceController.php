@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\PosInvoice;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -161,5 +162,79 @@ class InvoiceController extends Controller
         $invoice->delete();
 
         return redirect()->back()->with('success', 'Invoice deleted successfully.');
+    }
+
+    /**
+     * Complete POS checkout and generate secure server-calculated invoice.
+     */
+    public function checkout(Request $request)
+    {
+        $validated = $request->validate([
+            'payment_method' => ['required', 'string', 'in:cash,aba_qr'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $invoice = DB::transaction(function () use ($validated, $request) {
+                $staffId = $request->user()->id;
+                $totalAmount = 0;
+                $invoiceItems = [];
+
+                // 1. Process items, verify stock, and calculate server-side totals
+                foreach ($validated['items'] as $itemData) {
+                    // Query product with a lock to prevent concurrent stock-outs
+                    $product = Product::lockForUpdate()->findOrFail($itemData['product_id']);
+
+                    if ($product->product_stock < $itemData['quantity']) {
+                        throw new \Exception("Insufficient stock for product: {$product->product_title}. Available: {$product->product_stock}. Requested: {$itemData['quantity']}");
+                    }
+
+                    // Decrement product inventory count
+                    $product->decrement('product_stock', $itemData['quantity']);
+
+                    $itemTotal = $product->product_price * $itemData['quantity'];
+                    $totalAmount += $itemTotal;
+
+                    $invoiceItems[] = [
+                        'product_id' => $product->id,
+                        'quantity' => $itemData['quantity'],
+                        'unit_price' => $product->product_price, // snapshot price
+                    ];
+                }
+
+                // 2. Auto-generate sequential invoice number
+                $invoiceNumber = PosInvoice::generateInvoiceNumber();
+
+                // 3. Create invoice header record
+                $invoice = PosInvoice::create([
+                    'invoice_number' => $invoiceNumber,
+                    'staff_id' => $staffId,
+                    'total_amount' => $totalAmount,
+                    'payment_method' => $validated['payment_method'],
+                    'status' => 'paid', // Initial payment state (paid since it was checkout completed)
+                ]);
+
+                // 4. Create invoice line items snap-shot
+                foreach ($invoiceItems as $item) {
+                    $invoice->items()->create($item);
+                }
+
+                return $invoice;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checkout completed successfully.',
+                'invoice' => $invoice->load('items.product'),
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 }
