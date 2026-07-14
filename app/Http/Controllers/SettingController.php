@@ -13,6 +13,11 @@ class SettingController extends Controller
      */
     public function index()
     {
+        $telegramBotToken = Setting::get('telegram_bot_token', config('services.telegram.bot_token'));
+        $telegramChatId = Setting::get('telegram_chat_id', config('services.telegram.chat_id'));
+        $telegramReportBotToken = Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token'));
+        $telegramReportChatId = Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id'));
+
         $settings = [
             'store_name' => Setting::get('store_name', 'Tos Tinh Mart'),
             'store_address' => Setting::get('store_address', 'Phnom Penh, Cambodia'),
@@ -26,15 +31,32 @@ class SettingController extends Controller
             'low_stock_threshold' => Setting::get('low_stock_threshold', '5'),
             'default_checkout_role' => Setting::get('default_checkout_role', '1'),
             'theme_mode' => Setting::get('theme_mode', 'light'),
-            'telegram_bot_token' => Setting::get('telegram_bot_token', config('services.telegram.bot_token')),
-            'telegram_chat_id' => Setting::get('telegram_chat_id', config('services.telegram.chat_id')),
-            'telegram_report_bot_token' => Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token')),
-            'telegram_report_chat_id' => Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id')),
+            'telegram_bot_token' => $this->maskString($telegramBotToken, 7, 4),
+            'telegram_chat_id' => $this->maskString($telegramChatId, 3, 3),
+            'telegram_report_bot_token' => $this->maskString($telegramReportBotToken, 7, 4),
+            'telegram_report_chat_id' => $this->maskString($telegramReportChatId, 3, 3),
         ];
 
         return Inertia::render('Settings/Index', [
             'settings' => $settings,
         ]);
+    }
+
+    /**
+     * Helper to mask sensitive values securely.
+     */
+    private function maskString($string, $startLength = 7, $endLength = 4)
+    {
+        if (empty($string) || $string === 'your_telegram_bot_token' || $string === 'your_telegram_chat_id') {
+            return '';
+        }
+        $length = strlen($string);
+        if ($length > ($startLength + $endLength + 2)) {
+            $start = substr($string, 0, $startLength);
+            $end = substr($string, -$endLength);
+            return $start . str_repeat('•', 12) . $end;
+        }
+        return str_repeat('•', 12);
     }
 
     /**
@@ -62,9 +84,84 @@ class SettingController extends Controller
         ]);
 
         foreach ($validated as $key => $value) {
+            // Avoid overwriting credentials with masked placeholders from client submission
+            if (in_array($key, ['telegram_bot_token', 'telegram_chat_id', 'telegram_report_bot_token', 'telegram_report_chat_id'])) {
+                if ($value !== null && str_contains($value, '•')) {
+                    continue;
+                }
+            }
             Setting::set($key, (string) ($value ?? ''));
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');
+    }
+
+
+    /**
+     * Retrieve safely masked Telegram settings and bot info.
+     */
+    public function getTelegramSettings()
+    {
+        $token = Setting::get('telegram_bot_token') 
+            ?: config('services.telegram.bot_token') 
+            ?: env('TELEGRAM_BOT_TOKEN', '');
+        
+        $maskedToken = 'Not Configured';
+        $botName = 'Unknown Bot';
+
+        if (!empty($token)) {
+            $length = strlen($token);
+            if ($length > 11) {
+                $start = substr($token, 0, 7);
+                $end = substr($token, -4);
+                $maskedToken = $start . str_repeat('•', 12) . $end;
+            } else {
+                $maskedToken = str_repeat('•', 12);
+            }
+
+            if ($token !== 'your_telegram_bot_token') {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getMe");
+                    if ($response->successful()) {
+                        $botName = '@' . ($response->json('result.username') ?? 'TelegramBot');
+                    } else {
+                        $botName = 'Unknown (Invalid API Token)';
+                    }
+                } catch (\Exception $e) {
+                    $botName = 'Telegram Bot API Offline/Unreachable';
+                }
+            }
+        }
+
+        return response()->json([
+            'masked_token' => $maskedToken,
+            'bot_name' => $botName,
+        ]);
+    }
+
+    /**
+     * Update the Telegram Bot Token.
+     */
+    public function updateTelegramSettings(Request $request)
+    {
+        $request->validate([
+            'telegram_bot_token' => 'nullable|string|regex:/^[0-9]+:[a-zA-Z0-9_-]+$/|max:255',
+        ]);
+
+        $newToken = $request->input('telegram_bot_token');
+
+        if (!empty($newToken)) {
+            Setting::set('telegram_bot_token', $newToken);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Telegram Bot Token updated successfully. Active token masked.',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Token input was empty. Existing Telegram configurations maintained.',
+        ]);
     }
 }

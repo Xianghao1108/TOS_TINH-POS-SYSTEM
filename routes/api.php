@@ -31,3 +31,8 @@ Route::post('/telegram-webhook', [\App\Http\Controllers\Api\TelegramBotControlle
 Route::post('/send/telegram', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleOriginalBotCommands']);
 
 Route::post('/reports/trigger-now', [\App\Http\Controllers\Api\ReportApiController::class, 'triggerNow']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/settings/telegram', [\App\Http\Controllers\SettingController::class, 'getTelegramSettings']);
+    Route::post('/settings/telegram/update', [\App\Http\Controllers\SettingController::class, 'updateTelegramSettings']);
+});

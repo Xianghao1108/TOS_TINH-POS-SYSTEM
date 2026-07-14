@@ -4,6 +4,7 @@ import { Head, useForm } from '@inertiajs/react';
 import Breadcrumb from '@/Components/Breadcrumb';
 import InputError from '@/Components/InputError';
 import SalesReportSettings from './components/SalesReportSettings';
+import AdminSystemSettings from './components/AdminSystemSettings';
 
 export default function SettingsIndex({ settings = {} }) {
     const [activeTab, setActiveTab] = useState('general');
@@ -69,6 +70,7 @@ export default function SettingsIndex({ settings = {} }) {
         { id: 'telegram', label: 'Telegram Bot Settings', icon: 'fab fa-telegram text-sky-600' },
         { id: 'reports', label: 'Sales Report Settings', icon: 'fas fa-chart-line text-rose-500' },
         { id: 'backup', label: 'Database Backup & System Tools', icon: 'fas fa-database text-purple-600' },
+        { id: 'admin_system', label: 'Admin System Settings', icon: 'fas fa-shield-alt text-indigo-600' },
     ];
 
     return (
@@ -386,8 +388,13 @@ export default function SettingsIndex({ settings = {} }) {
                                 <SalesReportSettings data={data} setData={setData} errors={errors} />
                             )}
 
+                            {/* ADMIN SYSTEM SETTINGS TAB CONTENT */}
+                            {activeTab === 'admin_system' && (
+                                <AdminSystemSettings />
+                            )}
+
                             {/* Submit Save Button for Settings Form */}
-                            {activeTab !== 'backup' && (
+                            {activeTab !== 'backup' && activeTab !== 'admin_system' && (
                                 <div className="flex justify-end pt-4 border-t border-gray-200">
                                     <button
                                         type="submit"
