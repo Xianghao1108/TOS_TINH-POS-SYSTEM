@@ -10,14 +10,14 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('units', function (Blueprint $table) {
-        $table->id();
-        $table->string('unit_title');
-        $table->string('username');
-        $table->timestamps(); // Automatically adds created_at and updated_at
-    });
-}
+    {
+        Schema::create('units', function (Blueprint $table) {
+            $table->id();
+            $table->string('unit_title');
+            $table->string('username');
+            $table->timestamps(); // Automatically adds created_at and updated_at
+        });
+    }
 
     /**
      * Reverse the migrations.

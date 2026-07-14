@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\OrderItem;
-use Inertia\Inertia;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -16,7 +15,7 @@ class DashboardController extends Controller
     {
         // 1. Summary Metrics
         $today = Carbon::today();
-        
+
         // Today's Revenue: sum of invoice totals from today where status is 1 (paid)
         $todayRevenue = (float) Invoice::whereDate('created_at', $today)
             ->where('status', 1)

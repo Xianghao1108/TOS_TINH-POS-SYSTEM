@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Customer;
-use App\Models\Invoice;
 use App\Models\Maker;
-use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Size;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class InvoicePaymentMethodTest extends TestCase
@@ -21,7 +21,7 @@ class InvoicePaymentMethodTest extends TestCase
 
     public function test_manual_invoice_store_persists_payment_method()
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $user = User::factory()->create();
         $user->assignRole('Admin');
         $customer = Customer::create([

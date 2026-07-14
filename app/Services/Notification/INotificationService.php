@@ -8,9 +8,6 @@ interface INotificationService
 {
     /**
      * Send payment success notification.
-     *
-     * @param Payment $payment
-     * @return bool
      */
     public function sendPaymentSuccessNotification(Payment $payment): bool;
 }

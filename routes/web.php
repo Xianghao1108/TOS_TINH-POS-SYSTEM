@@ -1,22 +1,21 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\RolesController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MakerController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RolesController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SizeController;
 use App\Http\Controllers\SubCategoryController;
 use App\Http\Controllers\UnitController;
-use App\Http\Controllers\SizeController;
-use App\Http\Controllers\MakerController;
-use App\Http\Controllers\BrandController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\SettingController;
-use App\Http\Controllers\DashboardController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -24,14 +23,12 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('welcome');
 
-
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
 
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index')->middleware(['check:category-list']);
     Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create')->middleware(['check:category-create']);
@@ -44,17 +41,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [RolesController::class, 'index'])->name('roles.index')->middleware(['check:role-list']);
         Route::get('/create', [RolesController::class, 'create'])->name('roles.create')->middleware(['check:role-create']);
         Route::get('/{id}', [RolesController::class, 'edit'])->name('roles.edit')->middleware(['check:role-edit']);
-        Route::post("/", [RolesController::class, 'store'])->name('roles.store');
-        Route::patch("/{id}", [RolesController::class, 'update'])->name('roles.update');
-        Route::delete("/{id}", [RolesController::class, 'destroy'])->name('roles.destroy')->middleware(['check:role-delete']);
+        Route::post('/', [RolesController::class, 'store'])->name('roles.store');
+        Route::patch('/{id}', [RolesController::class, 'update'])->name('roles.update');
+        Route::delete('/{id}', [RolesController::class, 'destroy'])->name('roles.destroy')->middleware(['check:role-delete']);
     });
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('users.index')->middleware(['check:user-list']);
         Route::get('/create', [UserController::class, 'create'])->name('users.create')->middleware(['check:user-create']);
         Route::get('/{id}', [UserController::class, 'edit'])->name('users.edit')->middleware(['check:user-edit']);
-        Route::post("/", [UserController::class, 'store'])->name('users.store');
-        Route::patch("/{id}", [UserController::class, 'update'])->name('users.update');
-        Route::delete("/{id}", [UserController::class, 'destroy'])->name('users.destroy')->middleware(['check:user-delete']);
+        Route::post('/', [UserController::class, 'store'])->name('users.store');
+        Route::patch('/{id}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy')->middleware(['check:user-delete']);
     });
     // Read-only resource access for authenticated cashiers / staff
     Route::resource('customers', CustomerController::class)->only(['index', 'show']);
@@ -75,6 +72,7 @@ Route::middleware('auth')->group(function () {
             ['id' => 4, 'name' => 'Organic Apple Juice', 'category' => 'Beverages', 'price' => 3.50, 'stock' => 45],
             ['id' => 5, 'name' => 'Chocolate Bar', 'category' => 'Snacks', 'price' => 1.99, 'stock' => 2],
         ];
+
         return Inertia::render('POS/Index', ['products' => $products]);
     })->name('pos.index');
 
@@ -121,8 +119,5 @@ Route::middleware('auth')->group(function () {
         Route::resource('invoices', InvoiceController::class)->except(['index', 'show']);
     });
 });
-
-
-
 
 require __DIR__.'/auth.php';

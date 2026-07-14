@@ -11,9 +11,6 @@ class TelegramNotificationService implements INotificationService
 {
     /**
      * Send payment success notification.
-     *
-     * @param Payment $payment
-     * @return bool
      */
     public function sendPaymentSuccessNotification(Payment $payment): bool
     {
@@ -23,27 +20,29 @@ class TelegramNotificationService implements INotificationService
 
         if (empty($botToken) || empty($chatId)) {
             Log::warning('Telegram notification skipped: Telegram Bot Token or Chat ID is not configured.');
+
             return false;
         }
 
         $order = $payment->order;
-        if (!$order) {
+        if (! $order) {
             Log::error('Telegram notification failed: Payment record has no associated order.');
+
             return false;
         }
 
         // Retrieve the first invoice related to this order
         $invoice = $order->invoices()->first();
         $invoiceNumber = $invoice
-            ? '#INV-' . str_pad((string) $invoice->id, 5, '0', STR_PAD_LEFT)
+            ? '#INV-'.str_pad((string) $invoice->id, 5, '0', STR_PAD_LEFT)
             : 'N/A';
 
         $orderNumber = $order->order_number ?? 'N/A';
-        
+
         // Format amount: prefix '$' for USD, suffix ' KHR' for KHR
         $paymentAmount = ($payment->currency === 'KHR')
-            ? number_format($payment->amount, 0) . ' KHR'
-            : '$' . number_format($payment->amount, 2);
+            ? number_format($payment->amount, 0).' KHR'
+            : '$'.number_format($payment->amount, 2);
 
         $paymentMethod = 'Bakong KHQR';
         $transactionId = $payment->transaction_id ?? 'N/A';
@@ -51,13 +50,13 @@ class TelegramNotificationService implements INotificationService
 
         // 2. Compose markdown message
         $message = "🔔 *Payment Received!*\n\n"
-            . "• *Order Number*: `{$orderNumber}`\n"
-            . "• *Invoice Number*: `{$invoiceNumber}`\n"
-            . "• *Payment Amount*: `{$paymentAmount}`\n"
-            . "• *Payment Method*: `{$paymentMethod}`\n"
-            . "• *Transaction ID*: `{$transactionId}`\n"
-            . "• *Payment Time*: `{$paymentTime}`\n"
-            . "• *Status*: `Successful`";
+            ."• *Order Number*: `{$orderNumber}`\n"
+            ."• *Invoice Number*: `{$invoiceNumber}`\n"
+            ."• *Payment Amount*: `{$paymentAmount}`\n"
+            ."• *Payment Method*: `{$paymentMethod}`\n"
+            ."• *Transaction ID*: `{$transactionId}`\n"
+            ."• *Payment Time*: `{$paymentTime}`\n"
+            .'• *Status*: `Successful`';
 
         // 3. Send HTTP request to Telegram Bot API
         try {
@@ -69,13 +68,16 @@ class TelegramNotificationService implements INotificationService
 
             if ($response->successful()) {
                 Log::info("Telegram notification sent successfully for Order {$orderNumber}");
+
                 return true;
             }
 
-            Log::error("Telegram notification failed for Order {$orderNumber}. API Response: " . $response->body());
+            Log::error("Telegram notification failed for Order {$orderNumber}. API Response: ".$response->body());
+
             return false;
         } catch (\Exception $e) {
-            Log::error("Telegram notification failed for Order {$orderNumber}. Exception: " . $e->getMessage());
+            Log::error("Telegram notification failed for Order {$orderNumber}. Exception: ".$e->getMessage());
+
             return false;
         }
     }

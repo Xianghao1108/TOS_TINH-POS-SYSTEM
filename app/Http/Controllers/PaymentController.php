@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\Notification\TelegramStockAlertService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +18,7 @@ class PaymentController extends Controller
 {
     public function __construct(
         private readonly TelegramStockAlertService $telegramStockAlertService
-    ) {
-    }
+    ) {}
 
     /**
      * Display the POS checkout terminal.
@@ -125,7 +125,7 @@ class PaymentController extends Controller
             ]);
 
             // Automatically generate a paid Invoice for this completed sale
-            $invoice = \App\Models\Invoice::create([
+            $invoice = Invoice::create([
                 'customer_id' => $validated['customer_id'] ?? null,
                 'staff_id' => $request->user()->id,
                 'total' => $total,

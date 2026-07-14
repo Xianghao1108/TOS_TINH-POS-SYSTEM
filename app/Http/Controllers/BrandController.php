@@ -15,13 +15,13 @@ class BrandController extends Controller
         $query = Brand::with('maker');
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('brand_title', 'like', '%' . $request->search . '%');
+            $query->where('brand_title', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Brands/Index', [
             'brands' => $query->latest()->paginate(10)->withQueryString(),
             'makers' => Maker::all(), // Needed for the Add/Edit dropdown
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -30,7 +30,7 @@ class BrandController extends Controller
         $validated = $request->validate([
             'brand_title' => 'required|string|max:255|unique:brands,brand_title',
             'maker_id' => 'required|exists:makers,id',
-            'username' => 'required|string|max:255'
+            'username' => 'required|string|max:255',
         ]);
 
         Brand::create($validated);
@@ -41,9 +41,9 @@ class BrandController extends Controller
     public function update(Request $request, Brand $brand)
     {
         $validated = $request->validate([
-            'brand_title' => 'required|string|max:255|unique:brands,brand_title,' . $brand->id,
+            'brand_title' => 'required|string|max:255|unique:brands,brand_title,'.$brand->id,
             'maker_id' => 'required|exists:makers,id',
-            'username' => 'required|string|max:255'
+            'username' => 'required|string|max:255',
         ]);
 
         $brand->update($validated);
@@ -61,7 +61,7 @@ class BrandController extends Controller
     public function checkExistBrand(Request $request)
     {
         $exists = Brand::where('brand_title', $request->brand_title)->exists();
-        
+
         return response()->json(['exists' => $exists]);
     }
 }

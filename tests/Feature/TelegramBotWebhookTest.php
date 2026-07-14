@@ -2,10 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class TelegramBotWebhookTest extends TestCase
@@ -19,14 +17,14 @@ class TelegramBotWebhookTest extends TestCase
         // Configure test configurations for Telegram
         config([
             'services.telegram.bot_token' => '999999999:AAFhilS_test_token',
-            'services.telegram.chat_id' => '123456789'
+            'services.telegram.chat_id' => '123456789',
         ]);
     }
 
     public function test_handle_start_command()
     {
         Http::fake([
-            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200)
+            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200),
         ]);
 
         $payload = [
@@ -38,9 +36,9 @@ class TelegramBotWebhookTest extends TestCase
                 'from' => [
                     'id' => 987654321,
                     'username' => 'test_user',
-                    'first_name' => 'Test'
-                ]
-            ]
+                    'first_name' => 'Test',
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/send/telegram', $payload);
@@ -57,7 +55,7 @@ class TelegramBotWebhookTest extends TestCase
     public function test_handle_echo_message()
     {
         Http::fake([
-            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200)
+            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200),
         ]);
 
         $payload = [
@@ -67,9 +65,9 @@ class TelegramBotWebhookTest extends TestCase
                 'chat' => ['id' => 987654321, 'type' => 'private'],
                 'text' => 'Hello World!',
                 'from' => [
-                    'id' => 987654321
-                ]
-            ]
+                    'id' => 987654321,
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/send/telegram', $payload);
@@ -86,7 +84,7 @@ class TelegramBotWebhookTest extends TestCase
     public function test_handle_contact_form_reply_parses_regex_and_sends_email()
     {
         Http::fake([
-            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200)
+            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200),
         ]);
 
         $payload = [
@@ -97,9 +95,9 @@ class TelegramBotWebhookTest extends TestCase
                 'text' => 'This is the reply text to send via email',
                 'reply_to_message' => [
                     'message_id' => 41,
-                    'text' => "👤 Name: Alice Dev\n📧 Email: alice@example.com\n🏷️ Subject: Inquiry about product stock"
-                ]
-            ]
+                    'text' => "👤 Name: Alice Dev\n📧 Email: alice@example.com\n🏷️ Subject: Inquiry about product stock",
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/telegram-webhook', $payload);

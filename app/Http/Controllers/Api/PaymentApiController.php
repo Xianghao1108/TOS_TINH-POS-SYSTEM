@@ -3,32 +3,34 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendTelegramNotificationJob;
+use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\Invoice;
 use App\Services\KhqrService;
-use App\Services\Notification\TelegramStockAlertService;
 use App\Services\Notification\INotificationService;
+use App\Services\Notification\TelegramStockAlertService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 class PaymentApiController extends Controller
 {
     protected KhqrService $khqrService;
+
     protected INotificationService $notificationService;
+
     protected TelegramStockAlertService $telegramStockAlertService;
 
     public function __construct(
         KhqrService $khqrService,
         INotificationService $notificationService,
         TelegramStockAlertService $telegramStockAlertService
-    )
-    {
+    ) {
         $this->khqrService = $khqrService;
         $this->notificationService = $notificationService;
         $this->telegramStockAlertService = $telegramStockAlertService;
@@ -52,7 +54,7 @@ class PaymentApiController extends Controller
         $lowStockProductIds = [];
 
         try {
-            $response = DB::transaction(function () use ($currency, $items, $validated, $request, &$lowStockProductIds) {
+            $response = DB::transaction(function () use ($currency, $items, $validated, &$lowStockProductIds) {
                 $subtotalUsd = 0;
                 $orderItemsData = [];
 
@@ -81,7 +83,7 @@ class PaymentApiController extends Controller
                         'product_title' => $product->product_title,
                         'product_price' => $product->product_price,
                         'quantity' => $itemInput['quantity'],
-                        'product' => $product // reference to decrement later
+                        'product' => $product, // reference to decrement later
                     ];
                 }
 
@@ -186,7 +188,7 @@ class PaymentApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to initiate payment.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 400);
         }
     }
@@ -198,7 +200,7 @@ class PaymentApiController extends Controller
     {
         $payment = Payment::with(['order', 'order.items'])->find($paymentId);
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json(['message' => 'Payment not found.'], 404);
         }
 
@@ -215,10 +217,10 @@ class PaymentApiController extends Controller
                 ]);
             }
 
-            if ($apiResult && isset($apiResult['responseCode']) && (int)$apiResult['responseCode'] === 0) {
+            if ($apiResult && isset($apiResult['responseCode']) && (int) $apiResult['responseCode'] === 0) {
                 // Payment was completed successfully!
                 $txData = $apiResult['data'] ?? [];
-                $transactionId = $txData['hash'] ?? 'TXN-' . strtoupper(uniqid());
+                $transactionId = $txData['hash'] ?? 'TXN-'.strtoupper(uniqid());
                 $paidAt = isset($txData['createdDateMs']) ? date('Y-m-d H:i:s', $txData['createdDateMs'] / 1000) : now();
 
                 DB::transaction(function () use ($payment, $transactionId, $paidAt) {
@@ -231,7 +233,7 @@ class PaymentApiController extends Controller
                     $order = $payment->order;
                     $order->update([
                         'status' => 'paid',
-                        'total_payment' => $payment->amount
+                        'total_payment' => $payment->amount,
                     ]);
 
                     // Automatically generate a paid Invoice for this completed sale
@@ -251,9 +253,9 @@ class PaymentApiController extends Controller
                 $payment->refresh();
 
                 // Dispatch Telegram notification asynchronously after response is sent
-                $cacheKey = 'telegram_sent_' . $payment->id;
-                if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, 1800)) {
-                    \App\Jobs\SendTelegramNotificationJob::dispatch($payment)->afterResponse();
+                $cacheKey = 'telegram_sent_'.$payment->id;
+                if (Cache::add($cacheKey, true, 1800)) {
+                    SendTelegramNotificationJob::dispatch($payment)->afterResponse();
                 }
             } else {
                 // Otherwise, check if expired
@@ -261,7 +263,7 @@ class PaymentApiController extends Controller
                     DB::transaction(function () use ($payment) {
                         $payment->update(['payment_status' => 'failed']);
                         $payment->order->update(['status' => 'expired']);
-                        
+
                         // Revert inventory stock
                         foreach ($payment->order->items as $item) {
                             $product = Product::find($item->product_id);
@@ -290,7 +292,7 @@ class PaymentApiController extends Controller
         $invoiceNumber = $request->input('invoice_number');
         $status = $request->input('status') ?? 'paid';
 
-        if (!empty($invoiceNumber)) {
+        if (! empty($invoiceNumber)) {
             // --- 1. Real Bakong Webhook Callback Path ---
             $validated = $request->validate([
                 'invoice_number' => ['required', 'string'],
@@ -309,13 +311,14 @@ class PaymentApiController extends Controller
             // Verify webhook MD5 signature to ensure authenticity
             $secretKey = config('services.bakong.secret', 'bakong_secret_passphrase_123');
             $amountFormatted = number_format((float) $amount, 2, '.', '');
-            $expectedMd5 = md5($invoiceNumber . $amountFormatted . $currency . $status . $secretKey);
+            $expectedMd5 = md5($invoiceNumber.$amountFormatted.$currency.$status.$secretKey);
 
             if ($receivedMd5 !== $expectedMd5) {
                 Log::warning("Bakong webhook signature mismatch. Invoice: {$invoiceNumber}");
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid signature verification failed'
+                    'message' => 'Invalid signature verification failed',
                 ], 400);
             }
         } else {
@@ -333,9 +336,9 @@ class PaymentApiController extends Controller
         try {
             $result = DB::transaction(function () use ($invoiceNumber, $validated, $status) {
                 // Find and lock the order & payment row immediately
-                if (!empty($invoiceNumber)) {
+                if (! empty($invoiceNumber)) {
                     $order = Order::where('order_number', $invoiceNumber)->lockForUpdate()->first();
-                    if (!$order) {
+                    if (! $order) {
                         return ['error' => 'Order not found for specified invoice number.', 'status' => 404];
                     }
                     $payment = Payment::where('order_id', $order->id)->lockForUpdate()->first();
@@ -346,11 +349,11 @@ class PaymentApiController extends Controller
                     }
                 }
 
-                if (!$payment) {
+                if (! $payment) {
                     return ['error' => 'Payment not found.', 'status' => 404];
                 }
 
-                if (!$order) {
+                if (! $order) {
                     $order = $payment->order;
                 }
 
@@ -361,12 +364,12 @@ class PaymentApiController extends Controller
                         'message' => 'Payment already processed (Idempotent response).',
                         'payment_status' => 'paid',
                         'status' => 200,
-                        'notify' => false
+                        'notify' => false,
                     ];
                 }
 
                 if ($status === 'paid') {
-                    $transactionId = $validated['transaction_id'] ?? 'TXN-' . strtoupper(uniqid());
+                    $transactionId = $validated['transaction_id'] ?? 'TXN-'.strtoupper(uniqid());
                     $paidAt = $validated['paid_at'] ?? now();
 
                     // Update payment
@@ -379,7 +382,7 @@ class PaymentApiController extends Controller
                     // Update order
                     $order->update([
                         'status' => 'paid',
-                        'total_payment' => $payment->amount
+                        'total_payment' => $payment->amount,
                     ]);
 
                     // Automatically generate a paid Invoice for this completed sale
@@ -420,7 +423,7 @@ class PaymentApiController extends Controller
                     'payment_status' => $status,
                     'status' => 200,
                     'notify' => ($status === 'paid'),
-                    'payment_id' => $payment->id
+                    'payment_id' => $payment->id,
                 ];
             });
 
@@ -428,25 +431,25 @@ class PaymentApiController extends Controller
                 return response()->json(['message' => $result['error']], $result['status']);
             }
 
-            if (!empty($result['notify'])) {
+            if (! empty($result['notify'])) {
                 $payment = Payment::find($result['payment_id']);
                 // Dispatch Telegram notification asynchronously after response is sent
-                $cacheKey = 'telegram_sent_' . $payment->id;
-                if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, 1800)) {
-                    \App\Jobs\SendTelegramNotificationJob::dispatch($payment)->afterResponse();
+                $cacheKey = 'telegram_sent_'.$payment->id;
+                if (Cache::add($cacheKey, true, 1800)) {
+                    SendTelegramNotificationJob::dispatch($payment)->afterResponse();
                 }
             }
 
             return response()->json([
                 'success' => $result['success'],
                 'message' => $result['message'],
-                'payment_status' => $result['payment_status']
+                'payment_status' => $result['payment_status'],
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to process webhook.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 400);
         }
     }
@@ -475,13 +478,14 @@ class PaymentApiController extends Controller
         // Verify webhook MD5 signature to ensure authenticity
         $secretKey = config('services.bakong.secret', 'bakong_secret_passphrase_123');
         $amountFormatted = number_format((float) $amount, 2, '.', '');
-        $expectedMd5 = md5($invoiceNumber . $amountFormatted . $currency . $status . $secretKey);
+        $expectedMd5 = md5($invoiceNumber.$amountFormatted.$currency.$status.$secretKey);
 
         if ($receivedMd5 !== $expectedMd5) {
             Log::warning("Bakong production webhook signature mismatch. Invoice: {$invoiceNumber}");
+
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid signature verification failed'
+                'message' => 'Invalid signature verification failed',
             ], 400);
         }
 
@@ -489,12 +493,12 @@ class PaymentApiController extends Controller
             $result = DB::transaction(function () use ($invoiceNumber, $validated, $status) {
                 // Find and lock the order & payment row immediately
                 $order = Order::where('order_number', $invoiceNumber)->lockForUpdate()->first();
-                if (!$order) {
+                if (! $order) {
                     return ['error' => 'Order not found for specified invoice number.', 'status' => 404];
                 }
 
                 $payment = Payment::where('order_id', $order->id)->lockForUpdate()->first();
-                if (!$payment) {
+                if (! $payment) {
                     return ['error' => 'Pending payment not found for this order.', 'status' => 404];
                 }
 
@@ -505,12 +509,12 @@ class PaymentApiController extends Controller
                         'message' => 'Bakong production webhook processed successfully (Idempotent response).',
                         'payment_status' => 'paid',
                         'status' => 200,
-                        'notify' => false
+                        'notify' => false,
                     ];
                 }
 
                 if ($status === 'paid') {
-                    $transactionId = $validated['transaction_id'] ?? 'TXN-' . strtoupper(uniqid());
+                    $transactionId = $validated['transaction_id'] ?? 'TXN-'.strtoupper(uniqid());
                     $paidAt = $validated['paid_at'] ?? now();
 
                     // Update payment status in database
@@ -523,7 +527,7 @@ class PaymentApiController extends Controller
                     // Update order status
                     $order->update([
                         'status' => 'paid',
-                        'total_payment' => $payment->amount
+                        'total_payment' => $payment->amount,
                     ]);
 
                     // Automatically generate a paid Invoice for this completed sale
@@ -560,7 +564,7 @@ class PaymentApiController extends Controller
                     'payment_status' => $status,
                     'status' => 200,
                     'notify' => ($status === 'paid'),
-                    'payment_id' => $payment->id
+                    'payment_id' => $payment->id,
                 ];
             });
 
@@ -568,27 +572,26 @@ class PaymentApiController extends Controller
                 return response()->json(['message' => $result['error']], $result['status']);
             }
 
-            if (!empty($result['notify'])) {
+            if (! empty($result['notify'])) {
                 $payment = Payment::find($result['payment_id']);
                 // Dispatch Telegram notification asynchronously
-                $cacheKey = 'telegram_sent_' . $payment->id;
-                if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, 1800)) {
-                    \App\Jobs\SendTelegramNotificationJob::dispatch($payment)->afterResponse();
+                $cacheKey = 'telegram_sent_'.$payment->id;
+                if (Cache::add($cacheKey, true, 1800)) {
+                    SendTelegramNotificationJob::dispatch($payment)->afterResponse();
                 }
             }
 
             return response()->json([
                 'success' => $result['success'],
                 'message' => $result['message'],
-                'payment_status' => $result['payment_status']
+                'payment_status' => $result['payment_status'],
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to process production webhook.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 400);
         }
     }
 }
-

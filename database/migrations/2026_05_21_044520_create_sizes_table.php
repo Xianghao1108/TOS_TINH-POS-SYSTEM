@@ -10,14 +10,14 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('sizes', function (Blueprint $table) {
-        $table->id();
-        $table->string('size_title');
-        $table->string('username');
-        $table->timestamps(); // Automatically generates created_at and updated_at
-    });
-}
+    {
+        Schema::create('sizes', function (Blueprint $table) {
+            $table->id();
+            $table->string('size_title');
+            $table->string('username');
+            $table->timestamps(); // Automatically generates created_at and updated_at
+        });
+    }
 
     /**
      * Reverse the migrations.

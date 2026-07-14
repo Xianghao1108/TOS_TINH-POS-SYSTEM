@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Invoice;
+use App\Models\OrderItem;
 use App\Models\Setting;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -69,9 +70,9 @@ class SendSalesReport extends Command
             ->sum('total');
 
         // Items Sold: total items sold today in paid invoices
-        $itemsSold = (int) \App\Models\OrderItem::whereHas('order.invoices', function ($query) use ($today) {
+        $itemsSold = (int) OrderItem::whereHas('order.invoices', function ($query) use ($today) {
             $query->whereDate('invoices.created_at', $today)
-                  ->where('invoices.status', 1);
+                ->where('invoices.status', 1);
         })->sum('quantity');
 
         // Get global configurations
@@ -82,14 +83,15 @@ class SendSalesReport extends Command
         if (empty($botToken) || empty($chatId)) {
             $this->error('Telegram bot settings are not configured.');
             Log::warning('Telegram Daily Sales Report skipped: Bot Token or Chat ID is not configured.');
+
             return 1;
         }
 
         // Format helper: formats currency based on the global symbol
         $formatAmount = function ($amount) use ($currencySymbol) {
-            return ($currencySymbol === '$') 
-                ? '$' . number_format($amount, 2) 
-                : number_format($amount, 0) . ' ' . $currencySymbol;
+            return ($currencySymbol === '$')
+                ? '$'.number_format($amount, 2)
+                : number_format($amount, 0).' '.$currencySymbol;
         };
 
         $salesFormatted = $formatAmount($totalSales);
@@ -98,14 +100,14 @@ class SendSalesReport extends Command
 
         // Compose Markdown Message with new styling requested by user
         $message = "📊 *Daily Sales Report*\n\n"
-            . "📅 *Date:* `{$dateFormatted}`\n\n"
-            . "💰 *Total Sales:* `{$salesFormatted}`\n"
-            . "🧾 *Total Orders:* `{$totalOrders}`\n"
-            . "👥 *Customers Served:* `{$customersServed}`\n"
-            . "💳 *Cash Payments:* `{$cashFormatted}`\n"
-            . "📱 *KHQR Payments:* `{$khqrFormatted}`\n\n\n"
-            . "📦 *Items Sold:* `{$itemsSold}`\n\n\n"
-            . "✅ End of daily sales report.";
+            ."📅 *Date:* `{$dateFormatted}`\n\n"
+            ."💰 *Total Sales:* `{$salesFormatted}`\n"
+            ."🧾 *Total Orders:* `{$totalOrders}`\n"
+            ."👥 *Customers Served:* `{$customersServed}`\n"
+            ."💳 *Cash Payments:* `{$cashFormatted}`\n"
+            ."📱 *KHQR Payments:* `{$khqrFormatted}`\n\n\n"
+            ."📦 *Items Sold:* `{$itemsSold}`\n\n\n"
+            .'✅ End of daily sales report.';
 
         // Send HTTP request to Telegram API
         try {
@@ -116,17 +118,20 @@ class SendSalesReport extends Command
             ]);
 
             if ($response->successful()) {
-                $this->info("Sales report successfully sent to Telegram.");
-                Log::info("Daily sales report sent via Telegram successfully.");
+                $this->info('Sales report successfully sent to Telegram.');
+                Log::info('Daily sales report sent via Telegram successfully.');
+
                 return 0;
             }
 
-            $this->error("Failed to send message: " . $response->body());
-            Log::error("Failed to send Telegram daily sales report: " . $response->body());
+            $this->error('Failed to send message: '.$response->body());
+            Log::error('Failed to send Telegram daily sales report: '.$response->body());
+
             return 1;
         } catch (\Exception $e) {
-            $this->error("Exception occurred: " . $e->getMessage());
-            Log::error("Failed to send Telegram daily sales report. Exception: " . $e->getMessage());
+            $this->error('Exception occurred: '.$e->getMessage());
+            Log::error('Failed to send Telegram daily sales report. Exception: '.$e->getMessage());
+
             return 1;
         }
     }

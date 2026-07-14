@@ -2,19 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Models\Setting;
-use App\Models\User;
-use App\Models\Category;
-use App\Models\Size;
-use App\Models\Unit;
-use App\Models\Maker;
 use App\Models\Brand;
-use App\Models\Product;
+use App\Models\Category;
+use App\Models\Customer;
+use App\Models\Maker;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Product;
+use App\Models\Setting;
+use App\Models\Size;
+use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-
 
 class TelegramSettingsTest extends TestCase
 {
@@ -32,7 +33,7 @@ class TelegramSettingsTest extends TestCase
             'masked_token',
             'bot_name',
         ]);
-        
+
         $data = $response->json();
         // First 7 characters is "1234567"
         // Last 4 characters is "wxyZ"
@@ -97,20 +98,20 @@ class TelegramSettingsTest extends TestCase
     public function test_non_admin_cannot_access_settings_page()
     {
         $user = User::factory()->create();
-        
+
         $response = $this->actingAs($user)->get('/settings');
-        
+
         $response->assertStatus(403);
     }
 
     public function test_admin_can_access_settings_page()
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $user = User::factory()->create();
         $user->assignRole('Admin');
 
         $response = $this->actingAs($user)->get('/settings');
-        
+
         $response->assertStatus(200);
     }
 
@@ -134,11 +135,11 @@ class TelegramSettingsTest extends TestCase
 
     public function test_invoice_creation_recalculates_totals_and_ignores_client_input()
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $admin = User::factory()->create();
         $admin->assignRole('Admin');
 
-        $customer = \App\Models\Customer::create([
+        $customer = Customer::create([
             'username' => 'Jane Client',
             'email' => 'jane@example.com',
             'phone' => '099999999',
@@ -210,7 +211,7 @@ class TelegramSettingsTest extends TestCase
     public function test_webhook_payment_is_concurrency_safe_and_idempotent()
     {
         $user = User::factory()->create();
-        $customer = \App\Models\Customer::create([
+        $customer = Customer::create([
             'username' => 'Concurrency Customer',
             'email' => 'concur@example.com',
             'phone' => '077777777',
@@ -228,9 +229,7 @@ class TelegramSettingsTest extends TestCase
             'total_payment' => 0.00,
         ]);
 
-
-
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             'order_id' => $order->id,
             'amount' => 10.00,
             'currency' => 'USD',
@@ -259,9 +258,7 @@ class TelegramSettingsTest extends TestCase
         $response2->assertJsonFragment([
             'success' => true,
             'message' => 'Payment already processed (Idempotent response).',
-            'payment_status' => 'paid'
+            'payment_status' => 'paid',
         ]);
     }
 }
-
-

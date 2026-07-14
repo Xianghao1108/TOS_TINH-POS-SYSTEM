@@ -26,7 +26,7 @@ class OrderController extends Controller
 
         return Inertia::render('Orders/Index', [
             'orders' => $query->latest()->paginate(15)->withQueryString(),
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -67,6 +67,7 @@ class OrderController extends Controller
     {
         // The migration cascade rule automatically drops matching items rows safely from DB
         $order->delete();
+
         return redirect()->back()->with('success', 'Order record removed from log.');
     }
 }

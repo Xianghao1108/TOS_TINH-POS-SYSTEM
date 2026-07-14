@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use App\Models\User;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -16,12 +16,12 @@ class UserController extends Controller
     {
         $query = User::with('roles');
 
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+        if ($request->has('search') && ! empty($request->search)) {
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         $users = $query->paginate(10)->appends(request()->query());
-        
+
         return Inertia::render('Users/Index', [
             'users' => $users,
         ]);
@@ -30,8 +30,9 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
+
         return Inertia::render('Users/CreateEdit', [
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -57,10 +58,11 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        if (!empty($validated['roles'])) {
+        if (! empty($validated['roles'])) {
             $user->assignRole($validated['roles']);
         }
-        return to_route('users.index')->with("success", "User created successfully");
+
+        return to_route('users.index')->with('success', 'User created successfully');
     }
 
     public function edit($id)
@@ -70,7 +72,7 @@ class UserController extends Controller
 
         return Inertia::render('Users/CreateEdit', [
             'roles' => $roles,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -94,16 +96,16 @@ class UserController extends Controller
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
         $user->save();
-        
-        if (!empty($request->roles)) {
+
+        if (! empty($request->roles)) {
             $user->syncRoles($request->roles);
         }
 
-        return to_route('users.index')->with("success", "User updated successfully");
+        return to_route('users.index')->with('success', 'User updated successfully');
     }
 
     public function destroy($id)
@@ -111,6 +113,6 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
-        return to_route('users.index')->with("success", "User Deleted successfully");
+        return to_route('users.index')->with('success', 'User Deleted successfully');
     }
 }

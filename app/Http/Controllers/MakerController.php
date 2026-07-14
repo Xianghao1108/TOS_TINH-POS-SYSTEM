@@ -13,13 +13,13 @@ class MakerController extends Controller
         $query = Maker::query();
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('maker_title', 'like', '%' . $request->search . '%');
+            $query->where('maker_title', 'like', '%'.$request->search.'%');
         }
 
         // Adjust the path below if you place the React file in an 'Inventory' subfolder
         return Inertia::render('Makers/Index', [
             'makers' => $query->latest()->paginate(10)->withQueryString(),
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -27,7 +27,7 @@ class MakerController extends Controller
     {
         $validated = $request->validate([
             'maker_title' => 'required|string|max:255|unique:makers,maker_title',
-            'username' => 'required|string|max:255'
+            'username' => 'required|string|max:255',
         ]);
 
         Maker::create($validated);
@@ -38,8 +38,8 @@ class MakerController extends Controller
     public function update(Request $request, Maker $maker)
     {
         $validated = $request->validate([
-            'maker_title' => 'required|string|max:255|unique:makers,maker_title,' . $maker->id,
-            'username' => 'required|string|max:255'
+            'maker_title' => 'required|string|max:255|unique:makers,maker_title,'.$maker->id,
+            'username' => 'required|string|max:255',
         ]);
 
         $maker->update($validated);
@@ -57,7 +57,7 @@ class MakerController extends Controller
     public function checkExistMaker(Request $request)
     {
         $exists = Maker::where('maker_title', $request->maker_title)->exists();
-        
+
         return response()->json(['exists' => $exists]);
     }
 }

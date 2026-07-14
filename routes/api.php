@@ -1,16 +1,19 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\ReportApiController;
+use App\Http\Controllers\Api\TelegramBotController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\SettingController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::group([ 'middleware' => 'api', 'prefix' => 'auth' ], function ($router) {
+Route::group(['middleware' => 'api', 'prefix' => 'auth'], function ($router) {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
 
@@ -27,12 +30,12 @@ Route::post('/payment-webhook', [PaymentApiController::class, 'simulateWebhook']
 Route::post('/orders', [OrderController::class, 'store']);
 
 // Migrated Telegram Webhook routes
-Route::post('/telegram-webhook', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleWebhook']);
-Route::post('/send/telegram', [\App\Http\Controllers\Api\TelegramBotController::class, 'handleOriginalBotCommands']);
+Route::post('/telegram-webhook', [TelegramBotController::class, 'handleWebhook']);
+Route::post('/send/telegram', [TelegramBotController::class, 'handleOriginalBotCommands']);
 
-Route::post('/reports/trigger-now', [\App\Http\Controllers\Api\ReportApiController::class, 'triggerNow']);
+Route::post('/reports/trigger-now', [ReportApiController::class, 'triggerNow']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/settings/telegram', [\App\Http\Controllers\SettingController::class, 'getTelegramSettings']);
-    Route::post('/settings/telegram/update', [\App\Http\Controllers\SettingController::class, 'updateTelegramSettings']);
+    Route::get('/settings/telegram', [SettingController::class, 'getTelegramSettings']);
+    Route::post('/settings/telegram/update', [SettingController::class, 'updateTelegramSettings']);
 });

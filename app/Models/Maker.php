@@ -9,6 +9,6 @@ class Maker extends Model
     //
     protected $fillable = [
         'maker_title',
-        'username'
+        'username',
     ];
 }

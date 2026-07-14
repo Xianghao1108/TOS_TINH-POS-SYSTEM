@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\JsonResponse;
 
 class ReportApiController extends Controller
 {
@@ -30,10 +30,11 @@ class ReportApiController extends Controller
                 'message' => 'Failed to send sales report. Check system logs for details.',
             ], 500);
         } catch (\Exception $e) {
-            Log::error('Manual trigger of sales report failed. Exception: ' . $e->getMessage());
+            Log::error('Manual trigger of sales report failed. Exception: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'An unexpected error occurred: ' . $e->getMessage(),
+                'message' => 'An unexpected error occurred: '.$e->getMessage(),
             ], 500);
         }
     }

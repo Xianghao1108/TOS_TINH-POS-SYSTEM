@@ -46,8 +46,9 @@ class TelegramBotController extends Controller
     protected function processContactFormReply(array $body)
     {
         $message = $body['message'] ?? null;
-        if (!$message) {
+        if (! $message) {
             Log::info('[Telegram Bot] No message found in update.');
+
             return;
         }
 
@@ -55,19 +56,22 @@ class TelegramBotController extends Controller
         $replyText = $message['text'] ?? null;
         $replyToMessage = $message['reply_to_message'] ?? null;
 
-        if (!$chatId) {
+        if (! $chatId) {
             Log::error('[Telegram Bot] Missing chat ID.');
+
             return;
         }
 
-        if (!$replyText) {
+        if (! $replyText) {
             Log::info('[Telegram Bot] Reply has no text content.');
+
             return;
         }
 
         // 1. Verify this message is a reply to another message (the contact form)
-        if (!$replyToMessage) {
+        if (! $replyToMessage) {
             Log::info('[Telegram Bot] Message is not a reply to another message. Ignoring.');
+
             return;
         }
 
@@ -87,8 +91,9 @@ class TelegramBotController extends Controller
         $subject = isset($subjectMatches[1]) ? trim($subjectMatches[1]) : null;
 
         // 3. If fields cannot be extracted, log a warning
-        if (!$email || !$name || !$subject) {
-            Log::warning('[Telegram Bot] Could not parse email, name, or subject from the contact form message. Parent text: ' . $parentText);
+        if (! $email || ! $name || ! $subject) {
+            Log::warning('[Telegram Bot] Could not parse email, name, or subject from the contact form message. Parent text: '.$parentText);
+
             return;
         }
 
@@ -101,24 +106,25 @@ class TelegramBotController extends Controller
         $token = Setting::get('telegram_bot_token', config('services.telegram.bot_token'));
         if (empty($token) || $token === '8631035259:AAFhilS_4xyF0gg3sNBrQqucVbP6gzmNfMg') {
             Log::warning('[Telegram Bot] TELEGRAM_BOT_TOKEN is not configured or is default. Skipping confirmation message.');
+
             return;
         }
 
-        $confirmationText = "📬 *Reply Sent via Email!*\n\n" .
-                            "👤 *To*: {$name} (<{$email}>)\n" .
-                            "🏷️ *Subject*: Re: {$subject}\n\n" .
-                            "💬 *Message forwarded successfully.*";
+        $confirmationText = "📬 *Reply Sent via Email!*\n\n".
+                            "👤 *To*: {$name} (<{$email}>)\n".
+                            "🏷️ *Subject*: Re: {$subject}\n\n".
+                            '💬 *Message forwarded successfully.*';
 
         try {
             Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id' => $chatId,
                 'text' => $confirmationText,
                 'parse_mode' => 'Markdown',
-                'reply_to_message_id' => $message['message_id']
+                'reply_to_message_id' => $message['message_id'],
             ]);
             Log::info("[Telegram Bot] Sent confirmation back to Telegram chat: {$chatId}");
         } catch (\Exception $e) {
-            Log::error('[Telegram Bot] Failed to send Telegram confirmation. Error: ' . $e->getMessage());
+            Log::error('[Telegram Bot] Failed to send Telegram confirmation. Error: '.$e->getMessage());
         }
     }
 
@@ -141,7 +147,7 @@ class TelegramBotController extends Controller
     protected function processOriginalBotCommands(array $body)
     {
         $message = $body['message'] ?? null;
-        if (!$message || !isset($message['chat']['id']) || !isset($message['text'])) {
+        if (! $message || ! isset($message['chat']['id']) || ! isset($message['text'])) {
             return;
         }
 
@@ -151,6 +157,7 @@ class TelegramBotController extends Controller
 
         if (empty($token) || $token === 'your_telegram_bot_token') {
             Log::warning('[Telegram Bot Original] Bot token not configured.');
+
             return;
         }
 
@@ -160,7 +167,7 @@ class TelegramBotController extends Controller
                 $greetingName = 'user';
 
                 if (isset($fromUser['username'])) {
-                    $greetingName = '@' . $fromUser['username'];
+                    $greetingName = '@'.$fromUser['username'];
                 } elseif (isset($fromUser['first_name'])) {
                     $greetingName = $fromUser['first_name'];
                 }
@@ -176,7 +183,7 @@ class TelegramBotController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('[Telegram Bot Original] Error: ' . $e->getMessage());
+            Log::error('[Telegram Bot Original] Error: '.$e->getMessage());
         }
     }
 }

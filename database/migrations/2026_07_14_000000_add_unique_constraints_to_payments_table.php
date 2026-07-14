@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('payments', function (Blueprint $table) {
             // Drop regular index on khqr_md5 if it exists, and make it unique
             $table->unique('khqr_md5');
-            
+
             // Add unique constraint on transaction_id (allowing multiple nulls)
             $table->unique('transaction_id');
         });

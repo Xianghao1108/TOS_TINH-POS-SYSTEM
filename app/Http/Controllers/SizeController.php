@@ -16,12 +16,12 @@ class SizeController extends Controller
         $query = Size::query();
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('size_title', 'like', '%' . $request->search . '%');
+            $query->where('size_title', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Size/Index', [
             'sizes' => $query->latest()->paginate(10)->withQueryString(),
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -32,7 +32,7 @@ class SizeController extends Controller
     {
         $validated = $request->validate([
             'size_title' => 'required|string|max:255|unique:sizes,size_title',
-            'username' => 'required|string|max:255'
+            'username' => 'required|string|max:255',
         ]);
 
         Size::create($validated);
@@ -46,8 +46,8 @@ class SizeController extends Controller
     public function update(Request $request, Size $size)
     {
         $validated = $request->validate([
-            'size_title' => 'required|string|max:255|unique:sizes,size_title,' . $size->id,
-            'username' => 'required|string|max:255'
+            'size_title' => 'required|string|max:255|unique:sizes,size_title,'.$size->id,
+            'username' => 'required|string|max:255',
         ]);
 
         $size->update($validated);
@@ -71,7 +71,7 @@ class SizeController extends Controller
     public function checkExistSize(Request $request)
     {
         $exists = Size::where('size_title', $request->size_title)->exists();
-        
+
         return response()->json(['exists' => $exists]);
     }
 }

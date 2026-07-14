@@ -1,25 +1,26 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$app = require_once __DIR__.'/bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\Payment;
 use App\Services\KhqrService;
+use Illuminate\Contracts\Console\Kernel;
 
 $payment = Payment::where('payment_status', 'pending')->latest()->first();
 
-if (!$payment) {
+if (! $payment) {
     echo "No pending payments found in database.\n";
     exit;
 }
 
-$khqrService = new KhqrService();
+$khqrService = new KhqrService;
 
-echo "MD5: " . $payment->khqr_md5 . "\n";
-echo "Trying URL: " . config('services.bakong.api_url') . "\n";
+echo 'MD5: '.$payment->khqr_md5."\n";
+echo 'Trying URL: '.config('services.bakong.api_url')."\n";
 
 $result = $khqrService->checkTransaction($payment->khqr_md5);
 

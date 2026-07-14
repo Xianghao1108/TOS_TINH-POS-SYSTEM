@@ -23,6 +23,7 @@ class TelegramStockAlertService
 
         if (empty($botToken) || empty($chatId)) {
             Log::warning('Telegram stock alert skipped: Telegram Stock Bot Token or Chat ID is not configured.');
+
             return false;
         }
 
@@ -33,16 +34,16 @@ class TelegramStockAlertService
         $detectedTime = now()->setTimezone('Asia/Phnom_Penh')->format('d M Y • h:i A');
 
         $message = "🚨 *LOW INVENTORY ALERT*\n\n"
-            . "⚠️ One or more products are running low on stock.\n\n"
-            . "━━━━━━━━━━━━━━━━━━\n\n"
-            . "📦 Product: *{$productName}*\n"
-            . "🏷️ SKU: {$sku}\n"
-            . "📂 Category: {$categoryName}\n"
-            . "📊 Remaining Stock: *{$currentStock}*\n"
-            . "🔴 Minimum Stock: {$threshold}\n\n"
-            . "━━━━━━━━━━━━━━━━━━\n\n"
-            . "⏰ Detected: {$detectedTime}\n\n"
-            . "💡 Please restock this item as soon as possible to avoid stock shortages.";
+            ."⚠️ One or more products are running low on stock.\n\n"
+            ."━━━━━━━━━━━━━━━━━━\n\n"
+            ."📦 Product: *{$productName}*\n"
+            ."🏷️ SKU: {$sku}\n"
+            ."📂 Category: {$categoryName}\n"
+            ."📊 Remaining Stock: *{$currentStock}*\n"
+            ."🔴 Minimum Stock: {$threshold}\n\n"
+            ."━━━━━━━━━━━━━━━━━━\n\n"
+            ."⏰ Detected: {$detectedTime}\n\n"
+            .'💡 Please restock this item as soon as possible to avoid stock shortages.';
 
         try {
             $response = Http::timeout(5)

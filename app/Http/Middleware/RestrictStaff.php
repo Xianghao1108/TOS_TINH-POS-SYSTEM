@@ -10,10 +10,6 @@ class RestrictStaff
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -29,7 +25,7 @@ class RestrictStaff
 
             $currentRoute = $request->route() ? $request->route()->getName() : null;
 
-            if (!in_array($currentRoute, $allowedRouteNames)) {
+            if (! in_array($currentRoute, $allowedRouteNames)) {
                 return redirect()->route('orders.index');
             }
         }

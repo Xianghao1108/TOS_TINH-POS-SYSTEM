@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Maker;
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Models\Category;
 use App\Models\Size;
 use App\Models\Unit;
-use App\Models\Maker;
-use App\Models\Brand;
 use App\Services\Notification\TelegramStockAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,8 +18,7 @@ class ProductController extends Controller
 {
     public function __construct(
         private readonly TelegramStockAlertService $telegramStockAlertService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -27,8 +26,8 @@ class ProductController extends Controller
         $query = Product::with(['category', 'size', 'unit', 'maker', 'brand', 'images']);
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('product_title', 'like', '%' . $request->search . '%')
-                  ->orWhere('product_code', 'like', '%' . $request->search . '%');
+            $query->where('product_title', 'like', '%'.$request->search.'%')
+                ->orWhere('product_code', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Products/Index', [
@@ -38,7 +37,7 @@ class ProductController extends Controller
             'units' => Unit::all(),
             'makers' => Maker::all(),
             'brands' => Brand::all(),
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -57,7 +56,7 @@ class ProductController extends Controller
             'brand_id' => 'required|exists:brands,id',
             'product_description' => 'nullable|string',
             'user_id' => 'required|exists:users,id',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048' // Validate files block
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate files block
         ]);
 
         $product = Product::create($validated);
@@ -65,14 +64,14 @@ class ProductController extends Controller
         // Process file storage if uploads exist
         if ($request->hasFile('images')) {
             foreach ($product->images as $image) {
-                Storage::disk('public')->delete('products/' . $image->product_image_title);
+                Storage::disk('public')->delete('products/'.$image->product_image_title);
                 $image->delete();
             }
 
             foreach ($request->file('images') as $file) {
                 $fileSize = $file->getSize();
                 $extension = $file->getClientOriginalExtension();
-                $filename = time() . '_' . uniqid() . '.' . $extension;
+                $filename = time().'_'.uniqid().'.'.$extension;
 
                 // Save image safely to storage/app/public/products
                 $file->storeAs('products', $filename, 'public');
@@ -81,7 +80,7 @@ class ProductController extends Controller
                     'product_id' => $product->id,
                     'product_image_title' => $filename,
                     'product_image_size' => $this->formatBytes($fileSize),
-                    'product_image_extension' => $extension
+                    'product_image_extension' => $extension,
                 ]);
             }
         }
@@ -94,7 +93,7 @@ class ProductController extends Controller
         // Inertia multipart patch request compatibility handler
         $validated = $request->validate([
             'product_title' => 'required|string|max:255',
-            'product_code' => 'required|string|max:255|unique:products,product_code,' . $product->id,
+            'product_code' => 'required|string|max:255|unique:products,product_code,'.$product->id,
             'product_price' => 'required|numeric|min:0',
             'product_stock' => 'required|integer|min:0',
             'product_status' => 'required|in:1,2',
@@ -105,7 +104,7 @@ class ProductController extends Controller
             'brand_id' => 'required|exists:brands,id',
             'product_description' => 'nullable|string',
             'user_id' => 'required|exists:users,id',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $product->update($validated);
@@ -118,7 +117,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $file) {
                 $fileSize = $file->getSize();
                 $extension = $file->getClientOriginalExtension();
-                $filename = time() . '_' . uniqid() . '.' . $extension;
+                $filename = time().'_'.uniqid().'.'.$extension;
 
                 $file->storeAs('products', $filename, 'public');
 
@@ -126,7 +125,7 @@ class ProductController extends Controller
                     'product_id' => $product->id,
                     'product_image_title' => $filename,
                     'product_image_size' => $this->formatBytes($fileSize),
-                    'product_image_extension' => $extension
+                    'product_image_extension' => $extension,
                 ]);
             }
         }
@@ -138,9 +137,9 @@ class ProductController extends Controller
     public function destroyImage($id)
     {
         $image = ProductImage::findOrFail($id);
-        
+
         // Remove file from disk
-        Storage::disk('public')->delete('products/' . $image->product_image_title);
+        Storage::disk('public')->delete('products/'.$image->product_image_title);
         $image->delete();
 
         return redirect()->back()->with('success', 'Image removed.');
@@ -150,25 +149,29 @@ class ProductController extends Controller
     {
         // Automatically drop related storage photos via cascade logic
         foreach ($product->images as $image) {
-            Storage::disk('public')->delete('products/' . $image->product_image_title);
+            Storage::disk('public')->delete('products/'.$image->product_image_title);
         }
-        
+
         $product->delete();
+
         return redirect()->back()->with('success', 'Product deleted successfully.');
     }
 
     public function checkExistProduct(Request $request)
     {
         $exists = Product::where('product_code', $request->product_code)->exists();
+
         return response()->json(['exists' => $exists]);
     }
 
-    private function formatBytes($bytes, $precision = 2) {
-        $units = array('B', 'KB', 'MB', 'GB');
+    private function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
         $bytes = max($bytes, 0);
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
-        return round($bytes, $precision) . ' ' . $units[$pow];
+
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }

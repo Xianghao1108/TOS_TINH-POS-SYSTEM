@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -20,7 +21,7 @@ class SalesReportSyncTest extends TestCase
         // Configure test configurations for Telegram Report in config
         config([
             'services.telegram_report.bot_token' => '123456789:ABCdef_test_token',
-            'services.telegram_report.chat_id' => '987654321'
+            'services.telegram_report.chat_id' => '987654321',
         ]);
 
         // Also save to settings table as model gets preference
@@ -32,7 +33,7 @@ class SalesReportSyncTest extends TestCase
     public function test_api_manually_triggers_sales_report_to_telegram()
     {
         Http::fake([
-            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200)
+            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200),
         ]);
 
         $user = User::factory()->create();
@@ -84,7 +85,7 @@ class SalesReportSyncTest extends TestCase
     public function test_artisan_command_sends_automated_report_type()
     {
         Http::fake([
-            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200)
+            'https://api.telegram.org/bot*' => Http::response(['ok' => true], 200),
         ]);
 
         $user = User::factory()->create();
@@ -98,7 +99,7 @@ class SalesReportSyncTest extends TestCase
         ]);
 
         // Call the Artisan command directly (simulating automated cron trigger)
-        $exitCode = \Illuminate\Support\Facades\Artisan::call('sales:send-report');
+        $exitCode = Artisan::call('sales:send-report');
 
         $this->assertEquals(0, $exitCode);
 

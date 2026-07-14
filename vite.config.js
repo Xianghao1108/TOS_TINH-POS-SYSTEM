@@ -10,4 +10,26 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('@inertiajs')) {
+                            return 'vendor-inertia';
+                        }
+                        if (id.includes('moment')) {
+                            return 'vendor-moment';
+                        }
+                        return 'vendor'; // Generic vendor chunk
+                    }
+                }
+            }
+        },
+        chunkSizeWarningLimit: 1000,
+    }
 });
+

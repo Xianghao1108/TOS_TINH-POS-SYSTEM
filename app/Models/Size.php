@@ -9,6 +9,6 @@ class Size extends Model
     //
     protected $fillable = [
         'size_title',
-        'username'
+        'username',
     ];
 }

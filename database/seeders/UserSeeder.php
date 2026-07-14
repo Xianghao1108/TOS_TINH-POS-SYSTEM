@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -20,12 +19,12 @@ class UserSeeder extends Seeder
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'admin',
-                'password' => Hash::make('123456')
+                'password' => Hash::make('123456'),
             ]
         );
-        
+
         $role = Role::firstOrCreate(['name' => 'Admin']);
-        $permissions = Permission::pluck('id','id')->all();
+        $permissions = Permission::pluck('id', 'id')->all();
         $role->syncPermissions($permissions);
         $user->assignRole([$role->id]);
 
@@ -33,10 +32,10 @@ class UserSeeder extends Seeder
             ['email' => 'staff@gmail.com'],
             [
                 'name' => 'staff',
-                'password' => Hash::make('123456')
+                'password' => Hash::make('123456'),
             ]
         );
-        
+
         $staffRole = Role::firstOrCreate(['name' => 'Staff']);
         $staffUser->assignRole([$staffRole->id]);
     }

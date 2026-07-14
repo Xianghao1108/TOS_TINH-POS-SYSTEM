@@ -18,9 +18,9 @@ class CustomerController extends Controller
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('username', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('phone', 'like', '%' . $search . '%');
+                $q->where('username', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('phone', 'like', '%'.$search.'%');
             });
         }
 
@@ -28,7 +28,7 @@ class CustomerController extends Controller
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -57,7 +57,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'username' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:customers,email,' . $customer->id,
+            'email' => 'required|string|email|max:255|unique:customers,email,'.$customer->id,
             'phone' => 'required|string|max:20',
         ]);
 

@@ -57,7 +57,7 @@ return new class extends Migration
 
                 Schema::table($tableName, function (Blueprint $table) use ($hasUserIdForeignKey) {
                     if ($hasUserIdForeignKey) {
-                        $table->dropForeign(["user_id"]);
+                        $table->dropForeign(['user_id']);
                     }
 
                     $table->dropColumn('user_id');

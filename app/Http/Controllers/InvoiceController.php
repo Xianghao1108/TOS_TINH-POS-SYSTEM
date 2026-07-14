@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Invoice;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,12 +22,12 @@ class InvoiceController extends Controller
 
         // Search tracking logic (by Invoice ID)
         if ($request->has('search') && $request->search != '') {
-            $query->where('id', 'like', '%' . $request->search . '%');
+            $query->where('id', 'like', '%'.$request->search.'%');
         }
 
         $invoices = $query->latest()->paginate(15)->withQueryString();
         $customers = Customer::orderBy('username')->get();
-        
+
         // Fetch any orders that do not belong to an invoice yet
         $pendingOrders = Order::with(['customer', 'staff'])
             ->whereDoesntHave('invoices')
@@ -40,7 +41,7 @@ class InvoiceController extends Controller
             'customers' => $customers,
             'pendingOrders' => $pendingOrders,
             'users' => $users,
-            'filters' => $request->only('search')
+            'filters' => $request->only('search'),
         ]);
     }
 
@@ -71,7 +72,7 @@ class InvoiceController extends Controller
                 $orderTotal = 0;
                 foreach ($order->items as $item) {
                     // Query the verified database unit price of the product
-                    $product = $item->product ?: \App\Models\Product::find($item->product_id);
+                    $product = $item->product ?: Product::find($item->product_id);
                     $dbPrice = $product ? $product->product_price : $item->product_price;
                     $orderTotal += $dbPrice * $item->quantity;
                 }
@@ -114,7 +115,7 @@ class InvoiceController extends Controller
 
         DB::transaction(function () use ($invoice, $validated) {
             $updateData = ['status' => $validated['status']];
-            
+
             if (isset($validated['customer_id'])) {
                 $updateData['customer_id'] = $validated['customer_id'];
             }
@@ -127,20 +128,20 @@ class InvoiceController extends Controller
                 $calculatedTotal = 0;
                 foreach ($validated['order_ids'] as $orderId) {
                     $order = Order::with('items.product')->findOrFail($orderId);
-                    
+
                     // Sum up database-backed prices for the synced orders
                     $orderTotal = 0;
                     foreach ($order->items as $item) {
-                        $product = $item->product ?: \App\Models\Product::find($item->product_id);
+                        $product = $item->product ?: Product::find($item->product_id);
                         $dbPrice = $product ? $product->product_price : $item->product_price;
                         $orderTotal += $dbPrice * $item->quantity;
                     }
-                    
+
                     $syncData[$order->id] = ['total' => $order->total];
                     $calculatedTotal += $orderTotal;
                 }
                 $updateData['total'] = $calculatedTotal;
-                
+
                 $invoice->update($updateData);
                 $invoice->orders()->sync($syncData);
             } else {
@@ -150,7 +151,6 @@ class InvoiceController extends Controller
 
         return redirect()->back()->with('success', 'Invoice updated successfully.');
     }
-
 
     /**
      * Remove the specified invoice from storage.

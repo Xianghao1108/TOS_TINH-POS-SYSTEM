@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Http\Controllers\Controller;
 
 class RolesController extends Controller
 {
@@ -14,14 +13,14 @@ class RolesController extends Controller
     {
         $query = Role::latest();
 
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+        if ($request->has('search') && ! empty($request->search)) {
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         $roles = $query->paginate(10)->appends(request()->query());
 
         return Inertia::render('Roles/Index', [
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -30,26 +29,26 @@ class RolesController extends Controller
         $permissions = Permission::all();
 
         return Inertia::render('Roles/CreateEdit', [
-            'permissions' => $permissions
+            'permissions' => $permissions,
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-           'name' => 'required|min:3|unique:roles,name',
-           'permissions' => 'nullable|array',
-           'permissions.*' => 'integer|exists:permissions,id',
+            'name' => 'required|min:3|unique:roles,name',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
         $role = Role::create(['name' => $validated['name']]);
 
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             $permissions = Permission::whereIn('id', $validated['permissions'])->pluck('name');
             $role->syncPermissions($permissions);
         }
 
-        return to_route('roles.index')->with("success", "Role added successfully");
+        return to_route('roles.index')->with('success', 'Role added successfully');
     }
 
     public function edit($id)
@@ -60,14 +59,14 @@ class RolesController extends Controller
 
         return Inertia::render('Roles/CreateEdit', [
             'role' => $role,
-            'permissions' => $permissions
+            'permissions' => $permissions,
         ]);
     }
 
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => 'required|min:3|unique:roles,name,' . $id,
+            'name' => 'required|min:3|unique:roles,name,'.$id,
             'permissions' => 'nullable|array',
             'permissions.*' => 'integer|exists:permissions,id',
         ]);
@@ -77,12 +76,12 @@ class RolesController extends Controller
         $role->save();
 
         $permissions = [];
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             $permissions = Permission::whereIn('id', $validated['permissions'])->pluck('name');
         }
         $role->syncPermissions($permissions);
 
-        return to_route('roles.index')->with("success", "Role updated successfully");
+        return to_route('roles.index')->with('success', 'Role updated successfully');
     }
 
     public function destroy($id)
@@ -91,6 +90,6 @@ class RolesController extends Controller
 
         $role->delete();
 
-        return to_route('roles.index')->with("success", "Role Deleted successfully");
+        return to_route('roles.index')->with('success', 'Role Deleted successfully');
     }
 }

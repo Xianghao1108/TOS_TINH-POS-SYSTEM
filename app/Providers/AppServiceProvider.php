@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Notification\INotificationService;
+use App\Services\Notification\TelegramNotificationService;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,8 +15,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(
-            \App\Services\Notification\INotificationService::class,
-            \App\Services\Notification\TelegramNotificationService::class
+            INotificationService::class,
+            TelegramNotificationService::class
         );
     }
 

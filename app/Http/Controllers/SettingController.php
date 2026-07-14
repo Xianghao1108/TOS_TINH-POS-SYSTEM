@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 class SettingController extends Controller
@@ -39,8 +40,8 @@ class SettingController extends Controller
                 'chat_id' => $this->maskString($telegramChatId, 3, 3),
                 'report_bot_token' => $this->maskString($telegramReportBotToken, 7, 4),
                 'report_chat_id' => $this->maskString($telegramReportChatId, 3, 3),
-                'secret_token_status' => !empty($telegramSecretToken) ? 'Configured (Hidden)' : 'Not Configured',
-            ]
+                'secret_token_status' => ! empty($telegramSecretToken) ? 'Configured (Hidden)' : 'Not Configured',
+            ],
         ];
 
         return Inertia::render('Settings/Index', [
@@ -60,8 +61,10 @@ class SettingController extends Controller
         if ($length > ($startLength + $endLength + 2)) {
             $start = substr($string, 0, $startLength);
             $end = substr($string, -$endLength);
-            return $start . str_repeat('•', 12) . $end;
+
+            return $start.str_repeat('•', 12).$end;
         }
+
         return str_repeat('•', 12);
     }
 
@@ -100,38 +103,36 @@ class SettingController extends Controller
             Setting::set($key, (string) ($value ?? ''));
         }
 
-
         return redirect()->back()->with('success', 'Settings updated successfully.');
     }
-
 
     /**
      * Retrieve safely masked Telegram settings and bot info.
      */
     public function getTelegramSettings()
     {
-        $token = Setting::get('telegram_bot_token') 
-            ?: config('services.telegram.bot_token') 
+        $token = Setting::get('telegram_bot_token')
+            ?: config('services.telegram.bot_token')
             ?: env('TELEGRAM_BOT_TOKEN', '');
-        
+
         $maskedToken = 'Not Configured';
         $botName = 'Unknown Bot';
 
-        if (!empty($token)) {
+        if (! empty($token)) {
             $length = strlen($token);
             if ($length > 11) {
                 $start = substr($token, 0, 7);
                 $end = substr($token, -4);
-                $maskedToken = $start . str_repeat('•', 12) . $end;
+                $maskedToken = $start.str_repeat('•', 12).$end;
             } else {
                 $maskedToken = str_repeat('•', 12);
             }
 
             if ($token !== 'your_telegram_bot_token') {
                 try {
-                    $response = \Illuminate\Support\Facades\Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getMe");
+                    $response = Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getMe");
                     if ($response->successful()) {
-                        $botName = '@' . ($response->json('result.username') ?? 'TelegramBot');
+                        $botName = '@'.($response->json('result.username') ?? 'TelegramBot');
                     } else {
                         $botName = 'Unknown (Invalid API Token)';
                     }
@@ -158,9 +159,9 @@ class SettingController extends Controller
 
         $newToken = $request->input('telegram_bot_token');
 
-        if (!empty($newToken)) {
+        if (! empty($newToken)) {
             Setting::set('telegram_bot_token', $newToken);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Telegram Bot Token updated successfully. Active token masked.',

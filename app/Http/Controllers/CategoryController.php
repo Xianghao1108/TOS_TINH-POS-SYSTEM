@@ -17,14 +17,14 @@ class CategoryController extends Controller
         $query = Category::latest();
 
         if ($request->has('search') && $request->search != null) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         $rsDatas = $query->paginate(10)->appends(request()->query());
 
         return Inertia::render('Categories/Index', [
             'categoryData' => $rsDatas,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -34,7 +34,7 @@ class CategoryController extends Controller
     public function create()
     {
         return Inertia::render('Categories/CreateEdit', [
-            'datas' => ''
+            'datas' => '',
         ]);
     }
 
@@ -48,6 +48,7 @@ class CategoryController extends Controller
             'view_order' => 'required',
             'username' => 'required|string|max:255',
         ]));
+
         return redirect()->route('categories.index');
         // return back()->with('message', 'Data added successfully');
     }
@@ -66,8 +67,9 @@ class CategoryController extends Controller
     public function edit(Category $category, $id)
     {
         $rsDatasModel = Category::find($id);
+
         return Inertia::render('Categories/CreateEdit', [
-            'datas' => $rsDatasModel
+            'datas' => $rsDatasModel,
         ]);
     }
 
@@ -82,7 +84,7 @@ class CategoryController extends Controller
             'username' => 'required|string|max:255',
             'status' => 'required|string|in:active,inactive',
         ]);
-        
+
         $rsDatasModel = Category::find($id);
         $rsDatasModel->update($request->all());
 
