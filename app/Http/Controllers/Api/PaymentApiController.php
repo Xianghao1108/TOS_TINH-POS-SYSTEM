@@ -318,18 +318,6 @@ class PaymentApiController extends Controller
                     'message' => 'Invalid signature verification failed'
                 ], 400);
             }
-
-            // Find the order matching this invoice_number (in our system, order_number is stored as tag 62.01)
-            $order = Order::where('order_number', $invoiceNumber)->first();
-            if (!$order) {
-                return response()->json(['message' => 'Order not found for specified invoice number.'], 404);
-            }
-
-            // Get associated payment
-            $payment = Payment::where('order_id', $order->id)->where('payment_status', 'pending')->first();
-            if (!$payment) {
-                return response()->json(['message' => 'Pending payment not found for this order.'], 404);
-            }
         } else {
             // --- 2. Debug Simulation Path ---
             $validated = $request->validate([
@@ -340,22 +328,43 @@ class PaymentApiController extends Controller
             ]);
 
             $md5 = $validated['md5'];
-            $payment = Payment::where('khqr_md5', $md5)->first();
-
-            if (!$payment) {
-                return response()->json(['message' => 'Payment not found with specified MD5 hash.'], 404);
-            }
-
-            if ($payment->payment_status !== 'pending') {
-                return response()->json([
-                    'message' => "Payment is already marked as {$payment->payment_status}.",
-                    'payment_status' => $payment->payment_status
-                ]);
-            }
         }
 
         try {
-            DB::transaction(function () use ($payment, $validated, $status) {
+            $result = DB::transaction(function () use ($invoiceNumber, $validated, $status) {
+                // Find and lock the order & payment row immediately
+                if (!empty($invoiceNumber)) {
+                    $order = Order::where('order_number', $invoiceNumber)->lockForUpdate()->first();
+                    if (!$order) {
+                        return ['error' => 'Order not found for specified invoice number.', 'status' => 404];
+                    }
+                    $payment = Payment::where('order_id', $order->id)->lockForUpdate()->first();
+                } else {
+                    $payment = Payment::where('khqr_md5', $validated['md5'])->lockForUpdate()->first();
+                    if ($payment) {
+                        $order = $payment->order()->lockForUpdate()->first() ?: $payment->order;
+                    }
+                }
+
+                if (!$payment) {
+                    return ['error' => 'Payment not found.', 'status' => 404];
+                }
+
+                if (!$order) {
+                    $order = $payment->order;
+                }
+
+                // If already processed to paid, return an early idempotent success response
+                if ($payment->payment_status === 'paid' || $order->status === 'paid') {
+                    return [
+                        'success' => true,
+                        'message' => 'Payment already processed (Idempotent response).',
+                        'payment_status' => 'paid',
+                        'status' => 200,
+                        'notify' => false
+                    ];
+                }
+
                 if ($status === 'paid') {
                     $transactionId = $validated['transaction_id'] ?? 'TXN-' . strtoupper(uniqid());
                     $paidAt = $validated['paid_at'] ?? now();
@@ -368,7 +377,6 @@ class PaymentApiController extends Controller
                     ]);
 
                     // Update order
-                    $order = $payment->order;
                     $order->update([
                         'status' => 'paid',
                         'total_payment' => $payment->amount
@@ -393,7 +401,6 @@ class PaymentApiController extends Controller
                     ]);
 
                     // Update order to expired
-                    $order = $payment->order;
                     $order->update([
                         'status' => 'expired',
                     ]);
@@ -406,11 +413,23 @@ class PaymentApiController extends Controller
                         }
                     }
                 }
+
+                return [
+                    'success' => true,
+                    'message' => 'Payment successfully updated.',
+                    'payment_status' => $status,
+                    'status' => 200,
+                    'notify' => ($status === 'paid'),
+                    'payment_id' => $payment->id
+                ];
             });
 
-            if ($status === 'paid') {
-                $payment->refresh();
+            if (isset($result['error'])) {
+                return response()->json(['message' => $result['error']], $result['status']);
+            }
 
+            if (!empty($result['notify'])) {
+                $payment = Payment::find($result['payment_id']);
                 // Dispatch Telegram notification asynchronously after response is sent
                 $cacheKey = 'telegram_sent_' . $payment->id;
                 if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, 1800)) {
@@ -419,10 +438,10 @@ class PaymentApiController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Payment successfully updated.',
-                'payment_status' => $status
-            ]);
+                'success' => $result['success'],
+                'message' => $result['message'],
+                'payment_status' => $result['payment_status']
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -466,20 +485,30 @@ class PaymentApiController extends Controller
             ], 400);
         }
 
-        // Find the order matching this invoice_number (stored as tag 62.01)
-        $order = Order::where('order_number', $invoiceNumber)->first();
-        if (!$order) {
-            return response()->json(['message' => 'Order not found for specified invoice number.'], 404);
-        }
-
-        // Get associated payment
-        $payment = Payment::where('order_id', $order->id)->where('payment_status', 'pending')->first();
-        if (!$payment) {
-            return response()->json(['message' => 'Pending payment not found for this order.'], 404);
-        }
-
         try {
-            DB::transaction(function () use ($payment, $validated, $status) {
+            $result = DB::transaction(function () use ($invoiceNumber, $validated, $status) {
+                // Find and lock the order & payment row immediately
+                $order = Order::where('order_number', $invoiceNumber)->lockForUpdate()->first();
+                if (!$order) {
+                    return ['error' => 'Order not found for specified invoice number.', 'status' => 404];
+                }
+
+                $payment = Payment::where('order_id', $order->id)->lockForUpdate()->first();
+                if (!$payment) {
+                    return ['error' => 'Pending payment not found for this order.', 'status' => 404];
+                }
+
+                // If already processed to paid, return an early idempotent success response
+                if ($payment->payment_status === 'paid' || $order->status === 'paid') {
+                    return [
+                        'success' => true,
+                        'message' => 'Bakong production webhook processed successfully (Idempotent response).',
+                        'payment_status' => 'paid',
+                        'status' => 200,
+                        'notify' => false
+                    ];
+                }
+
                 if ($status === 'paid') {
                     $transactionId = $validated['transaction_id'] ?? 'TXN-' . strtoupper(uniqid());
                     $paidAt = $validated['paid_at'] ?? now();
@@ -492,7 +521,6 @@ class PaymentApiController extends Controller
                     ]);
 
                     // Update order status
-                    $order = $payment->order;
                     $order->update([
                         'status' => 'paid',
                         'total_payment' => $payment->amount
@@ -515,7 +543,6 @@ class PaymentApiController extends Controller
                     $payment->update(['payment_status' => 'failed']);
 
                     // Update order to expired
-                    $order = $payment->order;
                     $order->update(['status' => 'expired']);
 
                     // Revert inventory stock
@@ -526,11 +553,23 @@ class PaymentApiController extends Controller
                         }
                     }
                 }
+
+                return [
+                    'success' => true,
+                    'message' => 'Bakong production webhook processed successfully.',
+                    'payment_status' => $status,
+                    'status' => 200,
+                    'notify' => ($status === 'paid'),
+                    'payment_id' => $payment->id
+                ];
             });
 
-            if ($status === 'paid') {
-                $payment->refresh();
+            if (isset($result['error'])) {
+                return response()->json(['message' => $result['error']], $result['status']);
+            }
 
+            if (!empty($result['notify'])) {
+                $payment = Payment::find($result['payment_id']);
                 // Dispatch Telegram notification asynchronously
                 $cacheKey = 'telegram_sent_' . $payment->id;
                 if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, 1800)) {
@@ -539,10 +578,10 @@ class PaymentApiController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Bakong production webhook processed successfully.',
-                'payment_status' => $status
-            ]);
+                'success' => $result['success'],
+                'message' => $result['message'],
+                'payment_status' => $result['payment_status']
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -552,3 +591,4 @@ class PaymentApiController extends Controller
         }
     }
 }
+

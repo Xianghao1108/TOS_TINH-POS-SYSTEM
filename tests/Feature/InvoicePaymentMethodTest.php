@@ -21,7 +21,9 @@ class InvoicePaymentMethodTest extends TestCase
 
     public function test_manual_invoice_store_persists_payment_method()
     {
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
         $user = User::factory()->create();
+        $user->assignRole('Admin');
         $customer = Customer::create([
             'username' => 'Jane Customer',
             'email' => 'jane.customer@example.com',
@@ -71,7 +73,7 @@ class InvoicePaymentMethodTest extends TestCase
         $response = $this->actingAs($user)->post(route('invoices.store'), [
             'customer_id' => $customer->id,
             'staff_id' => $user->id,
-            'status' => 1,
+            'status' => 1, // Will be ignored by the secure controller logic
             'payment_method' => 'card',
             'total' => 3.00,
             'order_ids' => [$order->id],
@@ -83,7 +85,7 @@ class InvoicePaymentMethodTest extends TestCase
             'customer_id' => $customer->id,
             'staff_id' => $user->id,
             'total' => 3.00,
-            'status' => 1,
+            'status' => 2, // Server forces secure initial payment state status (2 = Unpaid/Pending)
             'payment_method' => 'card',
         ]);
 

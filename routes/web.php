@@ -56,7 +56,15 @@ Route::middleware('auth')->group(function () {
         Route::patch("/{id}", [UserController::class, 'update'])->name('users.update');
         Route::delete("/{id}", [UserController::class, 'destroy'])->name('users.destroy')->middleware(['check:user-delete']);
     });
-    Route::resource('customers', CustomerController::class);
+    // Read-only resource access for authenticated cashiers / staff
+    Route::resource('customers', CustomerController::class)->only(['index', 'show']);
+    Route::resource('products', ProductController::class)->only(['index', 'show']);
+    Route::resource('sub-categories', SubCategoryController::class)->only(['index', 'show']);
+    Route::resource('units', UnitController::class)->only(['index', 'show']);
+    Route::resource('sizes', SizeController::class)->only(['index', 'show']);
+    Route::resource('makers', MakerController::class)->only(['index', 'show']);
+    Route::resource('brands', BrandController::class)->only(['index', 'show']);
+    Route::resource('invoices', InvoiceController::class)->only(['index', 'show']);
 
     Route::get('/pos', function () {
         // Mock data for POS
@@ -67,54 +75,54 @@ Route::middleware('auth')->group(function () {
             ['id' => 4, 'name' => 'Organic Apple Juice', 'category' => 'Beverages', 'price' => 3.50, 'stock' => 45],
             ['id' => 5, 'name' => 'Chocolate Bar', 'category' => 'Snacks', 'price' => 1.99, 'stock' => 2],
         ];
-        return Inertia\Inertia::render('POS/Index', ['products' => $products]);
+        return Inertia::render('POS/Index', ['products' => $products]);
     })->name('pos.index');
 
-   
-    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-    // Custom validation endpoints (Must be declared BEFORE the resource routes)
-    Route::post('products/check-exists', [ProductController::class, 'checkExistProduct'])->name('products.check');
-    Route::delete('products/images/{id}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
-
-// Standard Resource CRUD Routes
-Route::resource('products', ProductController::class);
-
-    Route::resource('sub-categories', SubCategoryController::class);
-
-    // Custom route for checkExistUnit (Must go BEFORE the resource route)
-    Route::post('units/check-exists', [UnitController::class, 'checkExistUnit'])->name('units.check');
-
-    // This single line handles index (list), store (add), update (edit), and destroy (delete)
-    Route::resource('units', UnitController::class);
-
-    // Custom route for checkExistSize (MUST go before the resource route)
-    Route::post('sizes/check-exists', [SizeController::class, 'checkExistSize'])->name('sizes.check');
-
-    // Standard CRUD resource routes
-    Route::resource('sizes', SizeController::class);
-
-    // Custom route for live validation (Must go before the resource route)
-    Route::post('makers/check-exists', [MakerController::class, 'checkExistMaker'])->name('makers.check');
-
-    // Standard CRUD routes
-    Route::resource('makers', MakerController::class);
-
-    // Custom route for live validation (Must go before the resource route)
-    Route::post('brands/check-exists', [BrandController::class, 'checkExistBrand'])->name('brands.check');
-
-    // Standard CRUD routes
-    Route::resource('brands', BrandController::class);
-
-    Route::post('products/check-exists', [ProductController::class, 'checkExistProduct'])->name('products.check');
-    Route::resource('products', ProductController::class);
-
     Route::get('/orders', [PaymentController::class, 'index'])->name('orders.index');
-    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
     Route::resource('payments', PaymentController::class)->only(['store']);
-    Route::resource('invoices', InvoiceController::class)->only(['index', 'store', 'update', 'destroy']);
 
-    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    // Admin-only data-altering and system settings routes
+    Route::middleware('admin')->group(function () {
+        // Settings routes
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+        // Products write routes
+        Route::post('products/check-exists', [ProductController::class, 'checkExistProduct'])->name('products.check');
+        Route::delete('products/images/{id}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
+        Route::resource('products', ProductController::class)->except(['index', 'show']);
+
+        // Customers write routes
+        Route::resource('customers', CustomerController::class)->except(['index', 'show']);
+
+        // Sub-categories write routes
+        Route::resource('sub-categories', SubCategoryController::class)->except(['index', 'show']);
+
+        // Units write routes
+        Route::post('units/check-exists', [UnitController::class, 'checkExistUnit'])->name('units.check');
+        Route::resource('units', UnitController::class)->except(['index', 'show']);
+
+        // Sizes write routes
+        Route::post('sizes/check-exists', [SizeController::class, 'checkExistSize'])->name('sizes.check');
+        Route::resource('sizes', SizeController::class)->except(['index', 'show']);
+
+        // Makers write routes
+        Route::post('makers/check-exists', [MakerController::class, 'checkExistMaker'])->name('makers.check');
+        Route::resource('makers', MakerController::class)->except(['index', 'show']);
+
+        // Brands write routes
+        Route::post('brands/check-exists', [BrandController::class, 'checkExistBrand'])->name('brands.check');
+        Route::resource('brands', BrandController::class)->except(['index', 'show']);
+
+        // Orders write routes (deletion)
+        Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+
+        // Invoices write routes
+        Route::resource('invoices', InvoiceController::class)->except(['index', 'show']);
+    });
 });
+
+
+
 
 require __DIR__.'/auth.php';

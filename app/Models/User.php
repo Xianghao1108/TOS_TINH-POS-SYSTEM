@@ -57,4 +57,13 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    /**
+     * Determine if the user is an administrator.
+     */
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->hasRole('Admin');
+    }
 }
+

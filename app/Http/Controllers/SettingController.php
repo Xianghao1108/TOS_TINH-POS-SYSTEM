@@ -17,6 +17,7 @@ class SettingController extends Controller
         $telegramChatId = Setting::get('telegram_chat_id', config('services.telegram.chat_id'));
         $telegramReportBotToken = Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token'));
         $telegramReportChatId = Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id'));
+        $telegramSecretToken = Setting::get('telegram_secret_token') ?: config('services.telegram.secret_token') ?: env('TELEGRAM_SECRET_TOKEN', '');
 
         $settings = [
             'store_name' => Setting::get('store_name', 'Tos Tinh Mart'),
@@ -31,10 +32,15 @@ class SettingController extends Controller
             'low_stock_threshold' => Setting::get('low_stock_threshold', '5'),
             'default_checkout_role' => Setting::get('default_checkout_role', '1'),
             'theme_mode' => Setting::get('theme_mode', 'light'),
-            'telegram_bot_token' => $this->maskString($telegramBotToken, 7, 4),
-            'telegram_chat_id' => $this->maskString($telegramChatId, 3, 3),
-            'telegram_report_bot_token' => $this->maskString($telegramReportBotToken, 7, 4),
-            'telegram_report_chat_id' => $this->maskString($telegramReportChatId, 3, 3),
+
+            // Safely nested configuration parameters
+            'telegram' => [
+                'bot_token' => $this->maskString($telegramBotToken, 7, 4),
+                'chat_id' => $this->maskString($telegramChatId, 3, 3),
+                'report_bot_token' => $this->maskString($telegramReportBotToken, 7, 4),
+                'report_chat_id' => $this->maskString($telegramReportChatId, 3, 3),
+                'secret_token_status' => !empty($telegramSecretToken) ? 'Configured (Hidden)' : 'Not Configured',
+            ]
         ];
 
         return Inertia::render('Settings/Index', [
@@ -81,17 +87,19 @@ class SettingController extends Controller
             'telegram_chat_id' => 'nullable|string|max:255',
             'telegram_report_bot_token' => 'nullable|string|max:255',
             'telegram_report_chat_id' => 'nullable|string|max:255',
+            'telegram_secret_token' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {
-            // Avoid overwriting credentials with masked placeholders from client submission
-            if (in_array($key, ['telegram_bot_token', 'telegram_chat_id', 'telegram_report_bot_token', 'telegram_report_chat_id'])) {
-                if ($value !== null && str_contains($value, '•')) {
+            // Avoid overwriting credentials with masked placeholders or status labels from client submission
+            if (in_array($key, ['telegram_bot_token', 'telegram_chat_id', 'telegram_report_bot_token', 'telegram_report_chat_id', 'telegram_secret_token'])) {
+                if ($value !== null && (str_contains($value, '•') || $value === 'Configured (Hidden)')) {
                     continue;
                 }
             }
             Setting::set($key, (string) ($value ?? ''));
         }
+
 
         return redirect()->back()->with('success', 'Settings updated successfully.');
     }

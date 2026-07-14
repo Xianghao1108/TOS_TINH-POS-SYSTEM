@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import InputError from '@/Components/InputError';
 
-export default function SalesReportSettings({ data, setData, errors }) {
+export default function SalesReportSettings({ data, setData, errors, settings }) {
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -149,14 +149,14 @@ export default function SalesReportSettings({ data, setData, errors }) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">Telegram Report Bot Token</label>
                         <input
-                            type="text"
+                            type="password"
                             value={data.telegram_report_bot_token}
                             onChange={e => setData('telegram_report_bot_token', e.target.value)}
-                            placeholder="e.g. 8631035259:AAGLlz..."
+                            placeholder="Enter new token to update..."
                             className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
                         />
                         <span className="block text-[11px] text-gray-400 mt-1">
-                            Auth token for your custom Daily Sales Report Bot, configured via BotFather.
+                            Auth token for report bot. Current: <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono text-[10px] font-semibold">{settings?.telegram?.report_bot_token || 'Not Configured'}</code>
                         </span>
                         {errors && <InputError message={errors.telegram_report_bot_token} className="mt-1" />}
                     </div>
@@ -167,16 +167,17 @@ export default function SalesReportSettings({ data, setData, errors }) {
                             type="text"
                             value={data.telegram_report_chat_id}
                             onChange={e => setData('telegram_report_chat_id', e.target.value)}
-                            placeholder="e.g. -100840768371"
+                            placeholder="Enter new chat ID to update..."
                             className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
                         />
                         <span className="block text-[11px] text-gray-400 mt-1">
-                            Destination Channel/Group ID where reports will be dispatched.
+                            Destination ID. Current: <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono text-[10px] font-semibold">{settings?.telegram?.report_chat_id || 'Not Configured'}</code>
                         </span>
                         {errors && <InputError message={errors.telegram_report_chat_id} className="mt-1" />}
                     </div>
                 </div>
             </div>
+
 
             {/* Alert Notification Banners */}
             <div className="space-y-3">

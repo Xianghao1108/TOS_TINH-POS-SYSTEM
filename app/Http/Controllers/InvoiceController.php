@@ -51,20 +51,38 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => ['required', 'exists:customers,id'],
-            'staff_id' => ['required', 'exists:users,id'],
-            'status' => ['required', 'in:1,2'],
             'payment_method' => ['required', 'in:cash,qr,card'],
-            'total' => ['required', 'numeric', 'min:0'],
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['exists:orders,id'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        // Derive staff_id directly from the authenticated session
+        $staffId = $request->user()->id;
+
+        // Force secure initial payment state status (2 = Unpaid/Pending)
+        $status = 2;
+
+        $calculatedTotal = 0;
+
+        DB::transaction(function () use ($validated, $staffId, $status, &$calculatedTotal) {
+            // Loop through order_ids to verify product unit prices in the database and calculate total
+            foreach ($validated['order_ids'] as $orderId) {
+                $order = Order::with('items.product')->findOrFail($orderId);
+                $orderTotal = 0;
+                foreach ($order->items as $item) {
+                    // Query the verified database unit price of the product
+                    $product = $item->product ?: \App\Models\Product::find($item->product_id);
+                    $dbPrice = $product ? $product->product_price : $item->product_price;
+                    $orderTotal += $dbPrice * $item->quantity;
+                }
+                $calculatedTotal += $orderTotal;
+            }
+
             $invoice = Invoice::create([
                 'customer_id' => $validated['customer_id'],
-                'staff_id' => $validated['staff_id'],
-                'total' => $validated['total'],
-                'status' => $validated['status'],
+                'staff_id' => $staffId,
+                'total' => $calculatedTotal,
+                'status' => $status,
                 'payment_method' => $validated['payment_method'],
             ]);
 
@@ -88,10 +106,8 @@ class InvoiceController extends Controller
 
         $validated = $request->validate([
             'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
-            'staff_id' => ['sometimes', 'required', 'exists:users,id'],
             'status' => ['required', 'in:1,2'],
             'payment_method' => ['sometimes', 'required', 'in:cash,qr,card'],
-            'total' => ['sometimes', 'required', 'numeric', 'min:0'],
             'order_ids' => ['sometimes', 'required', 'array'],
             'order_ids.*' => ['exists:orders,id'],
         ]);
@@ -102,30 +118,39 @@ class InvoiceController extends Controller
             if (isset($validated['customer_id'])) {
                 $updateData['customer_id'] = $validated['customer_id'];
             }
-            if (isset($validated['staff_id'])) {
-                $updateData['staff_id'] = $validated['staff_id'];
-            }
-            if (isset($validated['total'])) {
-                $updateData['total'] = $validated['total'];
-            }
             if (isset($validated['payment_method'])) {
                 $updateData['payment_method'] = $validated['payment_method'];
             }
 
-            $invoice->update($updateData);
-
             if (isset($validated['order_ids'])) {
                 $syncData = [];
+                $calculatedTotal = 0;
                 foreach ($validated['order_ids'] as $orderId) {
-                    $order = Order::findOrFail($orderId);
+                    $order = Order::with('items.product')->findOrFail($orderId);
+                    
+                    // Sum up database-backed prices for the synced orders
+                    $orderTotal = 0;
+                    foreach ($order->items as $item) {
+                        $product = $item->product ?: \App\Models\Product::find($item->product_id);
+                        $dbPrice = $product ? $product->product_price : $item->product_price;
+                        $orderTotal += $dbPrice * $item->quantity;
+                    }
+                    
                     $syncData[$order->id] = ['total' => $order->total];
+                    $calculatedTotal += $orderTotal;
                 }
+                $updateData['total'] = $calculatedTotal;
+                
+                $invoice->update($updateData);
                 $invoice->orders()->sync($syncData);
+            } else {
+                $invoice->update($updateData);
             }
         });
 
         return redirect()->back()->with('success', 'Invoice updated successfully.');
     }
+
 
     /**
      * Remove the specified invoice from storage.
