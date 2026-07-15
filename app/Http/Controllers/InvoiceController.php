@@ -237,4 +237,127 @@ class InvoiceController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * Get details of the specified invoice for AJAX preview.
+     */
+    public function details(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'staff', 'orders.items.product']);
+        
+        $settings = [
+            'store_name' => \App\Models\Setting::get('store_name', 'Tos Tinh Mart'),
+            'store_address' => \App\Models\Setting::get('store_address', 'Phnom Penh, Cambodia'),
+            'store_phone' => \App\Models\Setting::get('store_phone', '+855 12 345 678'),
+            'store_email' => \App\Models\Setting::get('store_email', 'contact@tostinh.com'),
+            'currency_symbol' => \App\Models\Setting::get('currency_symbol', '$'),
+            'tax_rate' => floatval(\App\Models\Setting::get('tax_rate', '10.00')),
+        ];
+
+        return response()->json([
+            'invoice' => $invoice,
+            'settings' => $settings,
+        ]);
+    }
+
+    /**
+     * Download the specified invoice as PDF.
+     */
+    public function downloadPdf(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'staff', 'orders.items.product']);
+        
+        $currency = \App\Models\Setting::get('currency_symbol', '$');
+        $taxRate = floatval(\App\Models\Setting::get('tax_rate', '10.00'));
+        
+        $subtotal = 0;
+        $discount = 0;
+        $items = collect();
+
+        foreach ($invoice->orders as $order) {
+            $subtotal += floatval($order->subtotal);
+            $discount += floatval($order->discount);
+            
+            foreach ($order->items as $item) {
+                $items->push([
+                    'product_title' => $item->product_title,
+                    'product_code' => $item->product_code,
+                    'quantity' => intval($item->quantity),
+                    'product_price' => floatval($item->product_price),
+                    'subtotal' => floatval($item->quantity * $item->product_price)
+                ]);
+            }
+        }
+
+        // Consolidated items by product code or title to display a clean line listing
+        $consolidatedItems = $items->groupBy(function($item) {
+            return $item['product_code'] ?: $item['product_title'];
+        })->map(function ($group) {
+            return [
+                'product_title' => $group->first()['product_title'],
+                'product_code' => $group->first()['product_code'],
+                'quantity' => $group->sum('quantity'),
+                'product_price' => $group->first()['product_price'],
+                'subtotal' => $group->sum('subtotal')
+            ];
+        })->values();
+
+        $grandTotal = floatval($invoice->total);
+
+        // Calculate tax as inclusive VAT matching base amount
+        if ($taxRate > 0) {
+            $taxAmount = $grandTotal * ($taxRate / (100 + $taxRate));
+            $netAmount = $grandTotal - $taxAmount;
+        } else {
+            $taxAmount = 0;
+            $netAmount = $grandTotal;
+        }
+
+        // Format Payment Method nicely
+        $paymentLabel = 'Unknown';
+        $cleanMethod = strtolower(trim($invoice->payment_method ?? ''));
+        switch ($cleanMethod) {
+            case 'cash':
+                $paymentLabel = 'Cash';
+                break;
+            case 'qr':
+                $paymentLabel = 'QR';
+                break;
+            case 'khqr':
+                $paymentLabel = 'KHQR';
+                break;
+            case 'aba_qr':
+            case 'aba':
+                $paymentLabel = 'ABA QR';
+                break;
+            case 'card':
+                $paymentLabel = 'Card';
+                break;
+            default:
+                if (!empty($cleanMethod)) {
+                    $paymentLabel = ucwords(str_replace('_', ' ', $cleanMethod));
+                }
+                break;
+        }
+
+        $logoExists = file_exists(public_path('images/TOS TINH NOBG.png')) && extension_loaded('gd');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact(
+            'invoice', 
+            'consolidatedItems', 
+            'subtotal', 
+            'discount', 
+            'taxRate', 
+            'taxAmount', 
+            'netAmount', 
+            'grandTotal', 
+            'paymentLabel', 
+            'currency',
+            'logoExists'
+        ));
+
+        $pdf->setPaper('a4', 'portrait');
+        
+        return $pdf->download('invoice-' . sprintf('%05d', $invoice->id) . '.pdf');
+    }
 }

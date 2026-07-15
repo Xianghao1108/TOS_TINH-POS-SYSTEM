@@ -62,6 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('makers', MakerController::class)->only(['index', 'show']);
     Route::resource('brands', BrandController::class)->only(['index', 'show']);
     Route::resource('invoices', InvoiceController::class)->only(['index', 'show']);
+    Route::get('invoices/{invoice}/details', [InvoiceController::class, 'details'])->name('invoices.details');
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
 
     Route::get('/pos', function () {
         // Mock data for POS

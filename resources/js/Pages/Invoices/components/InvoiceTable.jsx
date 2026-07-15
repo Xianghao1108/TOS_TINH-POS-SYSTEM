@@ -1,7 +1,7 @@
 import React from 'react';
 import { money, invoiceNo, formatDate, statusPill, paymentMethodPill } from '../utils/invoiceHelpers';
 
-export function InvoiceTable({ invoiceList = [], onView, onEdit, onToggleStatus, onDelete }) {
+export function InvoiceTable({ invoiceList = [], onView, onEdit, onToggleStatus, onDelete, onPreview }) {
     return (
         <div className="w-full text-left">
             {/* Desktop Table View */}
@@ -46,6 +46,9 @@ export function InvoiceTable({ invoiceList = [], onView, onEdit, onToggleStatus,
                                         </button>
                                         <button onClick={() => onEdit(invoice)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white px-2.5 text-[11px] font-bold text-slate-500 transition hover:bg-amber-50 hover:text-amber-600 cursor-pointer" title="Edit invoice" type="button">
                                             <i className="fas fa-edit text-[10px]"></i> Edit
+                                        </button>
+                                        <button onClick={() => onPreview(invoice)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white px-2.5 text-[11px] font-bold text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer" title="Preview invoice" type="button">
+                                            <i className="fas fa-file-invoice text-[10px]"></i> Preview
                                         </button>
                                         <button onClick={() => onToggleStatus(invoice)} className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer" type="button">
                                             {invoice.status === 1 ? 'Mark unpaid' : 'Mark paid'}
@@ -92,13 +95,16 @@ export function InvoiceTable({ invoiceList = [], onView, onEdit, onToggleStatus,
                                 <div className="mt-1">{paymentMethodPill(invoice.payment_method)}</div>
                             </div>
                         </div>
-                        <div className="mt-4 flex gap-2">
-                            <button onClick={() => onView(invoice)} className="h-10 flex-1 rounded-xl bg-cyan-50 text-sm font-bold text-cyan-700 cursor-pointer border-0">View</button>
-                            <button onClick={() => onEdit(invoice)} className="h-10 flex-1 rounded-xl bg-amber-50 text-sm font-bold text-amber-700 cursor-pointer border-0">Edit</button>
-                            <button onClick={() => onToggleStatus(invoice)} className="h-10 flex-1 rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 cursor-pointer border-0">
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button onClick={() => onView(invoice)} className="h-10 flex-1 min-w-[70px] rounded-xl bg-cyan-50 text-sm font-bold text-cyan-700 cursor-pointer border-0">View</button>
+                            <button onClick={() => onEdit(invoice)} className="h-10 flex-1 min-w-[70px] rounded-xl bg-amber-50 text-sm font-bold text-amber-700 cursor-pointer border-0">Edit</button>
+                            <button onClick={() => onPreview(invoice)} className="h-10 flex-1 min-w-[70px] rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 cursor-pointer border-0 flex items-center justify-center gap-1.5">
+                                <i className="fas fa-file-invoice text-xs"></i> Preview
+                            </button>
+                            <button onClick={() => onToggleStatus(invoice)} className="h-10 flex-1 min-w-[70px] rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 cursor-pointer border-0">
                                 {invoice.status === 1 ? 'Unpaid' : 'Paid'}
                             </button>
-                            <button onClick={() => onDelete(invoice)} className="h-10 flex-1 rounded-xl bg-rose-50 text-sm font-bold text-rose-700 cursor-pointer border-0 flex items-center justify-center gap-1.5">
+                            <button onClick={() => onDelete(invoice)} className="h-10 flex-1 min-w-[70px] rounded-xl bg-rose-50 text-sm font-bold text-rose-700 cursor-pointer border-0 flex items-center justify-center gap-1.5">
                                 <i className="fas fa-trash text-xs"></i> Delete
                             </button>
                         </div>

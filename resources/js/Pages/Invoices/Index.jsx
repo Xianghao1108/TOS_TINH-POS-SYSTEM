@@ -10,6 +10,7 @@ import { InvoiceDetailModal } from './components/InvoiceDetailModal';
 import { InvoiceAddModal } from './components/InvoiceAddModal';
 import { InvoiceDeleteModal } from './components/InvoiceDeleteModal';
 import { InvoiceEditModal } from './components/InvoiceEditModal';
+import { InvoicePreviewModal } from './components/InvoicePreviewModal';
 
 export default function InvoicesIndex({ 
     invoices = {}, 
@@ -79,6 +80,19 @@ export default function InvoicesIndex({
     );
 
     const invoiceList = invoices.data || [];
+
+    const [previewInvoiceId, setPreviewInvoiceId] = React.useState(null);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = React.useState(false);
+
+    const handleOpenPreview = (invoice) => {
+        setPreviewInvoiceId(invoice.id);
+        setIsPreviewModalOpen(true);
+    };
+
+    const handleClosePreview = () => {
+        setPreviewInvoiceId(null);
+        setIsPreviewModalOpen(false);
+    };
 
     return (
         <AdminLayout breadcrumb={<Breadcrumb header="Invoices" links={[{ title: 'Home', url: '/' }, { title: 'Invoices', url: '' }]} />}>
@@ -164,6 +178,7 @@ export default function InvoicesIndex({
                                 onEdit={openEditModal}
                                 onToggleStatus={handleToggleStatus}
                                 onDelete={openDeleteModal}
+                                onPreview={handleOpenPreview}
                             />
                         </div>
 
@@ -241,6 +256,13 @@ export default function InvoicesIndex({
                     onClose={closeDeleteModal}
                     onSubmit={handleDeleteInvoice}
                     selectedInvoice={selectedInvoice}
+                />
+
+                {/* Dynamic Preview Modal */}
+                <InvoicePreviewModal
+                    isOpen={isPreviewModalOpen}
+                    onClose={handleClosePreview}
+                    invoiceId={previewInvoiceId}
                 />
 
             </section>
