@@ -52,8 +52,8 @@ class InvoiceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_id' => ['required', 'exists:customers,id'],
-            'payment_method' => ['required', 'in:cash,qr,card'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
+            'payment_method' => ['required', 'in:cash,qr,khqr,aba_qr,card'],
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['exists:orders,id'],
         ]);
@@ -107,9 +107,9 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
 
         $validated = $request->validate([
-            'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
+            'customer_id' => ['sometimes', 'nullable', 'exists:customers,id'],
             'status' => ['required', 'in:1,2'],
-            'payment_method' => ['sometimes', 'required', 'in:cash,qr,card'],
+            'payment_method' => ['sometimes', 'required', 'in:cash,qr,khqr,aba_qr,card'],
             'order_ids' => ['sometimes', 'required', 'array'],
             'order_ids.*' => ['exists:orders,id'],
         ]);

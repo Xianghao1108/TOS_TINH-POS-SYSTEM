@@ -199,11 +199,16 @@ export function useInvoiceManagement(auth, invoices = {}, customers = [], pendin
         
         const linkedOrderIds = invoice.orders ? invoice.orders.map((o) => o.id) : [];
         
+        let normalizedMethod = invoice.payment_method || 'cash';
+        if (normalizedMethod === 'qr' || normalizedMethod === 'aba_qr') {
+            normalizedMethod = 'khqr';
+        }
+        
         setEditData({
             customer_id: invoice.customer_id || '',
             staff_id: invoice.staff_id || '',
             status: String(invoice.status),
-            payment_method: invoice.payment_method || 'cash',
+            payment_method: normalizedMethod,
             total: Number(invoice.total || 0).toFixed(2),
             order_ids: linkedOrderIds,
         });
@@ -256,7 +261,7 @@ export function useInvoiceManagement(auth, invoices = {}, customers = [], pendin
 
     const submitEditInvoice = (e) => {
         e.preventDefault();
-        router.patch(route('invoices.update', selectedInvoice.id), editData, {
+        patchEdit(route('invoices.update', selectedInvoice.id), {
             onSuccess: () => {
                 closeEditModal();
             },

@@ -63,10 +63,10 @@ class SendSalesReport extends Command
             ->where('payment_method', 'cash')
             ->sum('total');
 
-        // KHQR Payments: sum of total for paid invoices where payment_method is qr
+        // KHQR Payments: sum of total for paid invoices where payment_method is qr, khqr, or aba_qr
         $khqrPayments = (float) Invoice::whereDate('created_at', $today)
             ->where('status', 1)
-            ->where('payment_method', 'qr')
+            ->whereIn('payment_method', ['qr', 'khqr', 'aba_qr'])
             ->sum('total');
 
         // Items Sold: total items sold today in paid invoices

@@ -116,7 +116,7 @@ export function InvoiceAddModal({
                                 onChange={(e) => setData('payment_method', e.target.value)}
                             >
                                 <option value="cash">Cash</option>
-                                <option value="qr">QR Code</option>
+                                <option value="khqr">KHQR</option>
                                 <option value="card">Card</option>
                             </select>
                             {errors.payment_method && <p className="mt-2 text-sm text-rose-600">{errors.payment_method}</p>}

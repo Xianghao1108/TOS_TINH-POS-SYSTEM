@@ -37,15 +37,23 @@ export const statusPill = (status) => status === 1 ? (
 );
 
 export const paymentMethodLabel = (method) => {
-    switch ((method || '').toString().trim().toLowerCase()) {
+    const cleanMethod = (method || '').toString().trim().toLowerCase();
+    switch (cleanMethod) {
         case 'qr':
             return 'QR';
-        case 'cash':
-            return 'Cash';
         case 'khqr':
             return 'KHQR';
+        case 'aba_qr':
+        case 'aba_qr_code':
+        case 'aba':
+            return 'ABA QR';
+        case 'cash':
+            return 'Cash';
+        case 'card':
+            return 'Card';
         default:
-            return method || 'Unknown';
+            if (!method) return 'Unknown';
+            return method.toString().trim().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 };
 
@@ -61,11 +69,11 @@ export const paymentMethodPill = (method) => {
         );
     }
 
-    if (label === 'QR') {
+    if (label === 'QR' || label === 'ABA QR') {
         return (
             <span className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
-                QR
+                {label}
             </span>
         );
     }
@@ -79,10 +87,19 @@ export const paymentMethodPill = (method) => {
         );
     }
 
+    if (label === 'Card') {
+        return (
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                Card
+            </span>
+        );
+    }
+
     return (
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
             <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            Unknown
+            {label}
         </span>
     );
 };

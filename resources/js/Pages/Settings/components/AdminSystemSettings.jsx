@@ -88,7 +88,7 @@ export default function AdminSystemSettings() {
 
     const handleUpdateTelegramToken = async (e) => {
         e.preventDefault();
-        
+
         if (!newToken.trim()) {
             setErrorMessage('Validation Error: Token input field is empty. Enter a valid token to perform overwrite.');
             return;
@@ -101,7 +101,7 @@ export default function AdminSystemSettings() {
         const token = localStorage.getItem('auth_token');
 
         try {
-            const response = await axios.post('/api/settings/telegram/update', 
+            const response = await axios.post('/api/settings/telegram/update',
                 { telegram_bot_token: newToken },
                 {
                     headers: {
@@ -185,11 +185,10 @@ export default function AdminSystemSettings() {
                             type="button"
                             onClick={triggerManualSync}
                             disabled={loading}
-                            className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-300 transform active:scale-95 disabled:opacity-50 ${
-                                loading 
-                                ? 'bg-slate-400 cursor-not-allowed'
-                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg'
-                            }`}
+                            className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-300 transform active:scale-95 disabled:opacity-50 ${loading
+                                    ? 'bg-slate-400 cursor-not-allowed'
+                                    : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg'
+                                }`}
                         >
                             {loading ? (
                                 <>
@@ -330,11 +329,10 @@ export default function AdminSystemSettings() {
                                     <button
                                         type="submit"
                                         disabled={updatingTelegram}
-                                        className={`w-full py-2 px-4 rounded-lg text-white font-semibold text-xs shadow flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 ${
-                                            updatingTelegram 
-                                            ? 'bg-slate-400 cursor-not-allowed'
-                                            : 'bg-sky-600 hover:bg-sky-700'
-                                        }`}
+                                        className={`w-full py-2 px-4 rounded-lg text-white font-semibold text-xs shadow flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 ${updatingTelegram
+                                                ? 'bg-slate-400 cursor-not-allowed'
+                                                : 'bg-sky-600 hover:bg-sky-700'
+                                            }`}
                                     >
                                         {updatingTelegram ? (
                                             <>
@@ -374,7 +372,7 @@ export default function AdminSystemSettings() {
                             <span className="font-semibold block text-emerald-950">Execution Successful</span>
                             <span>{successMessage}</span>
                         </div>
-                        <button 
+                        <button
                             type="button"
                             onClick={() => setSuccessMessage('')}
                             className="text-emerald-400 hover:text-emerald-600 transition p-1"
@@ -393,7 +391,7 @@ export default function AdminSystemSettings() {
                             <span className="font-semibold block text-rose-950">Execution Failed</span>
                             <span>{errorMessage}</span>
                         </div>
-                        <button 
+                        <button
                             type="button"
                             onClick={() => setErrorMessage('')}
                             className="text-rose-400 hover:text-rose-600 transition p-1"
