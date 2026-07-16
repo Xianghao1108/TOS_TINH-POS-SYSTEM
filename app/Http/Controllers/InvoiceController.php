@@ -7,7 +7,9 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\PosInvoice;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -244,14 +246,14 @@ class InvoiceController extends Controller
     public function details(Invoice $invoice)
     {
         $invoice->load(['customer', 'staff', 'orders.items.product']);
-        
+
         $settings = [
-            'store_name' => \App\Models\Setting::get('store_name', 'Tos Tinh Mart'),
-            'store_address' => \App\Models\Setting::get('store_address', 'Phnom Penh, Cambodia'),
-            'store_phone' => \App\Models\Setting::get('store_phone', '+855 12 345 678'),
-            'store_email' => \App\Models\Setting::get('store_email', 'contact@tostinh.com'),
-            'currency_symbol' => \App\Models\Setting::get('currency_symbol', '$'),
-            'tax_rate' => floatval(\App\Models\Setting::get('tax_rate', '10.00')),
+            'store_name' => Setting::get('store_name', 'Tos Tinh Mart'),
+            'store_address' => Setting::get('store_address', 'Phnom Penh, Cambodia'),
+            'store_phone' => Setting::get('store_phone', '+855 12 345 678'),
+            'store_email' => Setting::get('store_email', 'contact@tostinh.com'),
+            'currency_symbol' => Setting::get('currency_symbol', '$'),
+            'tax_rate' => floatval(Setting::get('tax_rate', '10.00')),
         ];
 
         return response()->json([
@@ -266,10 +268,10 @@ class InvoiceController extends Controller
     public function downloadPdf(Invoice $invoice)
     {
         $invoice->load(['customer', 'staff', 'orders.items.product']);
-        
-        $currency = \App\Models\Setting::get('currency_symbol', '$');
-        $taxRate = floatval(\App\Models\Setting::get('tax_rate', '10.00'));
-        
+
+        $currency = Setting::get('currency_symbol', '$');
+        $taxRate = floatval(Setting::get('tax_rate', '10.00'));
+
         $subtotal = 0;
         $discount = 0;
         $items = collect();
@@ -277,20 +279,20 @@ class InvoiceController extends Controller
         foreach ($invoice->orders as $order) {
             $subtotal += floatval($order->subtotal);
             $discount += floatval($order->discount);
-            
+
             foreach ($order->items as $item) {
                 $items->push([
                     'product_title' => $item->product_title,
                     'product_code' => $item->product_code,
                     'quantity' => intval($item->quantity),
                     'product_price' => floatval($item->product_price),
-                    'subtotal' => floatval($item->quantity * $item->product_price)
+                    'subtotal' => floatval($item->quantity * $item->product_price),
                 ]);
             }
         }
 
         // Consolidated items by product code or title to display a clean line listing
-        $consolidatedItems = $items->groupBy(function($item) {
+        $consolidatedItems = $items->groupBy(function ($item) {
             return $item['product_code'] ?: $item['product_title'];
         })->map(function ($group) {
             return [
@@ -298,7 +300,7 @@ class InvoiceController extends Controller
                 'product_code' => $group->first()['product_code'],
                 'quantity' => $group->sum('quantity'),
                 'product_price' => $group->first()['product_price'],
-                'subtotal' => $group->sum('subtotal')
+                'subtotal' => $group->sum('subtotal'),
             ];
         })->values();
 
@@ -334,7 +336,7 @@ class InvoiceController extends Controller
                 $paymentLabel = 'Card';
                 break;
             default:
-                if (!empty($cleanMethod)) {
+                if (! empty($cleanMethod)) {
                     $paymentLabel = ucwords(str_replace('_', ' ', $cleanMethod));
                 }
                 break;
@@ -342,22 +344,22 @@ class InvoiceController extends Controller
 
         $logoExists = file_exists(public_path('images/TOS TINH NOBG.png')) && extension_loaded('gd');
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact(
-            'invoice', 
-            'consolidatedItems', 
-            'subtotal', 
-            'discount', 
-            'taxRate', 
-            'taxAmount', 
-            'netAmount', 
-            'grandTotal', 
-            'paymentLabel', 
+        $pdf = Pdf::loadView('invoices.pdf', compact(
+            'invoice',
+            'consolidatedItems',
+            'subtotal',
+            'discount',
+            'taxRate',
+            'taxAmount',
+            'netAmount',
+            'grandTotal',
+            'paymentLabel',
             'currency',
             'logoExists'
         ));
 
         $pdf->setPaper('a4', 'portrait');
-        
-        return $pdf->download('invoice-' . sprintf('%05d', $invoice->id) . '.pdf');
+
+        return $pdf->download('invoice-'.sprintf('%05d', $invoice->id).'.pdf');
     }
 }

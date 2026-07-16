@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckPermission
@@ -17,7 +18,7 @@ class CheckPermission
     {
         // Get the currently authenticated user
         $user = $request->user();
-        
+
         if (! $user) {
             abort(403, 'You do not have the required permission.');
         }
@@ -31,7 +32,7 @@ class CheckPermission
             if (! $user->hasPermissionTo($permission)) {
                 abort(403, 'You do not have the required permission.');
             }
-        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
+        } catch (PermissionDoesNotExist $e) {
             abort(403, 'You do not have the required permission.');
         }
 

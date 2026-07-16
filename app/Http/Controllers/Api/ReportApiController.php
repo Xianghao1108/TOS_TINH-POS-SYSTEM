@@ -28,7 +28,7 @@ class ReportApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => !empty($output) ? $output : 'Failed to send sales report. Check system logs for details.',
+                'message' => ! empty($output) ? $output : 'Failed to send sales report. Check system logs for details.',
             ], 400);
         } catch (\Exception $e) {
             Log::error('Manual trigger of sales report failed. Exception: '.$e->getMessage());

@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
                 ['id' => 4, 'name' => 'Organic Apple Juice', 'category' => 'Beverages', 'price' => 3.50, 'stock' => 45],
                 ['id' => 5, 'name' => 'Chocolate Bar', 'category' => 'Snacks', 'price' => 1.99, 'stock' => 2],
             ];
+
             return Inertia::render('POS/Index', ['products' => $products]);
         })->name('pos.index');
 

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SalesReportSyncTest extends TestCase
@@ -117,7 +118,7 @@ class SalesReportSyncTest extends TestCase
 
     public function test_settings_page_receives_masked_telegram_report_settings()
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $user = User::factory()->create();
         $user->assignRole('Admin');
 
@@ -143,7 +144,7 @@ class SalesReportSyncTest extends TestCase
 
     public function test_update_sales_report_settings_individually()
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $user = User::factory()->create();
         $user->assignRole('Admin');
 
