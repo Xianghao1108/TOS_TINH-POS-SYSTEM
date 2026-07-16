@@ -33,7 +33,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->user()->hasRole('Staff')) {
+        if ($request->user()->hasRole('Staff') || $request->user()->hasRole('User') || $request->user()->hasRole('Cashier')) {
             return redirect()->route('orders.index');
         }
 

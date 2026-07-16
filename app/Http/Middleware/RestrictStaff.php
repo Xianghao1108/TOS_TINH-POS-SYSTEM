@@ -15,11 +15,14 @@ class RestrictStaff
     {
         $user = $request->user();
 
-        if ($user && $user->hasRole('Staff')) {
-            // Staff are only allowed to access POS page, save checkout, and logout
+        if ($user && ($user->hasRole('Staff') || $user->hasRole('User') || $user->hasRole('Cashier'))) {
+            // Non-Admin users are only allowed to access POS page, save checkout, profile pages, and logout
             $allowedRouteNames = [
                 'orders.index',
                 'payments.store',
+                'profile.edit',
+                'profile.update',
+                'profile.destroy',
                 'logout',
             ];
 
