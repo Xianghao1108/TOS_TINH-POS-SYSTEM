@@ -6,6 +6,9 @@ use App\Services\Notification\INotificationService;
 use App\Services\Notification\TelegramNotificationService;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Config;
+
 
 class AppServiceProvider extends ServiceProvider
 {
