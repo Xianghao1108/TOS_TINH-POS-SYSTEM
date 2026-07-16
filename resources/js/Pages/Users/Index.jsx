@@ -2,14 +2,14 @@ import React from 'react';
 import Breadcrumb from '@/Components/Breadcrumb';
 import Pagination from '@/Components/Pagination';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 
 // Custom Hooks and Components
 import { useUserManagement } from './hooks/useUserManagement';
 import { UserTable } from './components/UserTable';
 import { UserDeleteModal } from './components/UserDeleteModal';
 
-export default function UserPage({ users }) {
+export default function UserPage({ users, roles }) {
     const { auth } = usePage().props;
     const can = auth?.can ?? {};
 
@@ -23,6 +23,16 @@ export default function UserPage({ users }) {
         closeModal,
         deleteDataRow
     } = useUserManagement();
+
+    const handleRoleChange = (user, roleId) => {
+        router.patch(route('users.update', user.id), {
+            name: user.name,
+            email: user.email,
+            roles: [parseInt(roleId)]
+        }, {
+            preserveScroll: true
+        });
+    };
 
     const headWeb = 'Users';
     const linksBreadcrumb = [{ title: 'Home', url: '/' }, { title: headWeb, url: '' }];
@@ -53,6 +63,8 @@ export default function UserPage({ users }) {
                     
                     <UserTable
                         usersList={users.data}
+                        roles={roles}
+                        onRoleChange={handleRoleChange}
                         can={can}
                         onDelete={confirmDataDeletion}
                     />

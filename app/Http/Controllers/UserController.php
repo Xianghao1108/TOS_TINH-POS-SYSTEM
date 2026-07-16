@@ -21,9 +21,11 @@ class UserController extends Controller
         }
 
         $users = $query->paginate(10)->appends(request()->query());
+        $roles = Role::all();
 
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'roles' => $roles,
         ]);
     }
 
