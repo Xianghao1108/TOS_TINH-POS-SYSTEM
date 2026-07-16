@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import InputError from '@/Components/InputError';
-
-export default function SalesReportSettings({ data, setData, errors, settings }) {
+export default function SalesReportSettings() {
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -14,7 +12,7 @@ export default function SalesReportSettings({ data, setData, errors, settings })
 
         try {
             const response = await axios.post('/api/reports/trigger-now');
-            
+
             if (response.data && response.data.success) {
                 setSuccessMessage(response.data.message || 'Daily sales report sent to Telegram successfully!');
                 // Auto-clear success message after 7 seconds
@@ -46,7 +44,7 @@ export default function SalesReportSettings({ data, setData, errors, settings })
 
             {/* Grid Layout for Settings Panels */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+
                 {/* Cron Schedule Info Card */}
                 <div className="md:col-span-2 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between">
                     <div>
@@ -62,12 +60,6 @@ export default function SalesReportSettings({ data, setData, errors, settings })
 
                         <div className="space-y-3 text-sm text-slate-600">
                             <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                <span className="font-medium text-slate-500">Cron Command</span>
-                                <code className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-mono">
-                                    php artisan sales:send-report
-                                </code>
-                            </div>
-                            <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
                                 <span className="font-medium text-slate-500">Scheduled Time</span>
                                 <span className="font-semibold text-slate-800">23:30 (11:30 PM) daily</span>
                             </div>
@@ -78,15 +70,6 @@ export default function SalesReportSettings({ data, setData, errors, settings })
                                 </span>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-amber-50/70 border border-amber-200/50 rounded-lg">
-                        <p className="text-xs text-amber-800 flex gap-2">
-                            <i className="fas fa-info-circle mt-0.5"></i>
-                            <span>
-                                Make sure your Telegram Bot credentials below are correctly configured to receive these daily sales summaries.
-                            </span>
-                        </p>
                     </div>
                 </div>
 
@@ -112,11 +95,10 @@ export default function SalesReportSettings({ data, setData, errors, settings })
                             type="button"
                             onClick={triggerManualSync}
                             disabled={loading}
-                            className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-300 transform active:scale-95 disabled:opacity-50 ${
-                                loading 
+                            className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-300 transform active:scale-95 disabled:opacity-50 ${loading
                                 ? 'bg-slate-400 cursor-not-allowed'
                                 : 'bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 hover:shadow-lg'
-                            }`}
+                                }`}
                         >
                             {loading ? (
                                 <>
@@ -138,45 +120,7 @@ export default function SalesReportSettings({ data, setData, errors, settings })
 
             </div>
 
-            {/* Telegram Daily Sale Report Bot Configuration Panel */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
-                <h3 className="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-                    <i className="fab fa-telegram text-sky-600"></i>
-                    <span>Sales Report Bot Credentials</span>
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Telegram Report Bot Token</label>
-                        <input
-                            type="password"
-                            value={data.telegram_report_bot_token}
-                            onChange={e => setData('telegram_report_bot_token', e.target.value)}
-                            placeholder="Enter new token to update..."
-                            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
-                        />
-                        <span className="block text-[11px] text-gray-400 mt-1">
-                            Auth token for report bot. Current: <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono text-[10px] font-semibold">{settings?.telegram?.report_bot_token || 'Not Configured'}</code>
-                        </span>
-                        {errors && <InputError message={errors.telegram_report_bot_token} className="mt-1" />}
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Telegram Report Chat ID</label>
-                        <input
-                            type="text"
-                            value={data.telegram_report_chat_id}
-                            onChange={e => setData('telegram_report_chat_id', e.target.value)}
-                            placeholder="Enter new chat ID to update..."
-                            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
-                        />
-                        <span className="block text-[11px] text-gray-400 mt-1">
-                            Destination ID. Current: <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono text-[10px] font-semibold">{settings?.telegram?.report_chat_id || 'Not Configured'}</code>
-                        </span>
-                        {errors && <InputError message={errors.telegram_report_chat_id} className="mt-1" />}
-                    </div>
-                </div>
-            </div>
 
 
             {/* Alert Notification Banners */}

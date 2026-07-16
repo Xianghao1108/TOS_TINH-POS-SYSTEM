@@ -14,10 +14,10 @@ class SettingController extends Controller
      */
     public function index()
     {
-        $telegramBotToken = Setting::get('telegram_bot_token', config('services.telegram.bot_token'));
-        $telegramChatId = Setting::get('telegram_chat_id', config('services.telegram.chat_id'));
-        $telegramReportBotToken = Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token'));
-        $telegramReportChatId = Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id'));
+        $telegramBotToken = Setting::get('telegram_bot_token') ?: config('services.telegram.bot_token');
+        $telegramChatId = Setting::get('telegram_chat_id') ?: config('services.telegram.chat_id');
+        $telegramReportBotToken = Setting::get('telegram_report_bot_token') ?: config('services.telegram_report.bot_token');
+        $telegramReportChatId = Setting::get('telegram_report_chat_id') ?: config('services.telegram_report.chat_id');
         $telegramSecretToken = Setting::get('telegram_secret_token') ?: config('services.telegram.secret_token') ?: env('TELEGRAM_SECRET_TOKEN', '');
 
         $settings = [
@@ -74,23 +74,23 @@ class SettingController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'store_name' => 'required|string|max:255',
-            'store_address' => 'nullable|string',
-            'store_email' => 'required|email|max:255',
-            'store_phone' => 'required|string|max:50',
-            'currency_symbol' => 'required|string|max:10',
-            'tax_rate' => 'required|numeric|min:0|max:100',
-            'receipt_header' => 'nullable|string',
-            'receipt_footer' => 'nullable|string',
-            'low_stock_alerts' => 'required|in:0,1',
-            'low_stock_threshold' => 'required|integer|min:0',
-            'default_checkout_role' => 'required|in:1,2',
-            'theme_mode' => 'required|in:light,dark',
-            'telegram_bot_token' => 'nullable|string|max:255',
-            'telegram_chat_id' => 'nullable|string|max:255',
-            'telegram_report_bot_token' => 'nullable|string|max:255',
-            'telegram_report_chat_id' => 'nullable|string|max:255',
-            'telegram_secret_token' => 'nullable|string|max:255',
+            'store_name' => 'sometimes|required|string|max:255',
+            'store_address' => 'sometimes|nullable|string',
+            'store_email' => 'sometimes|required|email|max:255',
+            'store_phone' => 'sometimes|required|string|max:50',
+            'currency_symbol' => 'sometimes|required|string|max:10',
+            'tax_rate' => 'sometimes|required|numeric|min:0|max:100',
+            'receipt_header' => 'sometimes|nullable|string',
+            'receipt_footer' => 'sometimes|nullable|string',
+            'low_stock_alerts' => 'sometimes|required|in:0,1',
+            'low_stock_threshold' => 'sometimes|required|integer|min:0',
+            'default_checkout_role' => 'sometimes|required|in:1,2',
+            'theme_mode' => 'sometimes|required|in:light,dark',
+            'telegram_bot_token' => 'sometimes|nullable|string|max:255',
+            'telegram_chat_id' => 'sometimes|nullable|string|max:255',
+            'telegram_report_bot_token' => 'sometimes|nullable|string|max:255',
+            'telegram_report_chat_id' => 'sometimes|nullable|string|max:255',
+            'telegram_secret_token' => 'sometimes|nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {

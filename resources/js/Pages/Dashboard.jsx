@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '../Layouts/AdminLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import Breadcrumb from '@/Components/Breadcrumb';
+import SalesReportSettings from './Settings/components/SalesReportSettings';
 
 export default function Dashboard({ metrics, chartData = [], recentInvoices = [], topProducts = [], lowStockItems = [] }) {
     const { auth } = usePage().props;
@@ -307,6 +308,11 @@ export default function Dashboard({ metrics, chartData = [], recentInvoices = []
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        {/* Sales Report Settings */}
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-left">
+                            <SalesReportSettings />
                         </div>
 
                     </div>

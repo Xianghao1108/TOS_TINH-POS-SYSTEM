@@ -17,6 +17,7 @@ class ReportApiController extends Controller
         try {
             // Programmatically call the Artisan command with the --manual option
             $exitCode = Artisan::call('sales:send-report', ['--manual' => true]);
+            $output = trim(Artisan::output());
 
             if ($exitCode === 0) {
                 return response()->json([
@@ -27,8 +28,8 @@ class ReportApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send sales report. Check system logs for details.',
-            ], 500);
+                'message' => !empty($output) ? $output : 'Failed to send sales report. Check system logs for details.',
+            ], 400);
         } catch (\Exception $e) {
             Log::error('Manual trigger of sales report failed. Exception: '.$e->getMessage());
 

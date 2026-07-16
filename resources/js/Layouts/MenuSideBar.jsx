@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function MenuSideBar() {
-    const { url } = usePage();
+    const { url, props: { auth } } = usePage();
     const [isExpanded, setIsExpanded] = useState(true);
     const [openDropdowns, setOpenDropdowns] = useState({});
 
@@ -29,18 +29,19 @@ export default function MenuSideBar() {
         {
             label: 'Main',
             items: [
-                { path: '/dashboard', href: route('dashboard'), icon: 'fas fa-th-large', text: 'Dashboard' },
-                { path: '/orders', href: route('orders.index'), icon: 'fas fa-shopping-cart', text: 'Orders' },
+                { path: '/dashboard', href: route('dashboard'), icon: 'fas fa-th-large', text: 'Dashboard', permission: 'page.dashboard' },
+                { path: '/orders', href: route('orders.index'), icon: 'fas fa-shopping-cart', text: 'Orders', permission: 'page.orders' },
             ]
         },
         {
             label: 'Management',
             items: [
-                { path: '/products', href: route('products.index'), icon: 'fas fa-box', text: 'Products' },
+                { path: '/products', href: route('products.index'), icon: 'fas fa-box', text: 'Products', permission: 'page.products' },
                 {
                     icon: 'fa-solid fa-layer-group',
                     text: 'Categories',
                     isDropdown: true,
+                    permission: 'page.categories',
                     subItems: [
                         { path: '/categories', href: route('categories.index'), text: 'Main Categories' },
                         { path: '/sub-categories', href: route('sub-categories.index'), text: 'Sub Categories' },
@@ -55,19 +56,27 @@ export default function MenuSideBar() {
         {
             label: 'Operation',
             items: [
-                { path: '/invoices', href: route('invoices.index'), icon: 'fas fa-file-invoice-dollar', text: 'Invoices' },
-                { path: '/customers', href: route('customers.index'), icon: 'fas fa-user-tag', text: 'Customers' },
+                { path: '/invoices', href: route('invoices.index'), icon: 'fas fa-file-invoice-dollar', text: 'Invoices', permission: 'page.invoices' },
+                { path: '/customers', href: route('customers.index'), icon: 'fas fa-user-tag', text: 'Customers', permission: 'page.customers' },
             ]
         },
         {
             label: 'System',
             items: [
-                { path: '/users', href: route('users.index'), icon: 'fas fa-user-shield', text: 'User List' },
-                { path: '/roles', href: route('roles.index'), icon: 'fas fa-users-cog', text: 'Roles & Permissions' },
-                { path: '/settings', href: route('settings.index'), icon: 'fas fa-cog', text: 'Settings' },
+                { path: '/users', href: route('users.index'), icon: 'fas fa-user-shield', text: 'User List', permission: 'page.users' },
+                { path: '/roles', href: route('roles.index'), icon: 'fas fa-users-cog', text: 'Roles & Permissions', permission: 'page.roles' },
+                { path: '/settings', href: route('settings.index'), icon: 'fas fa-cog', text: 'Settings', permission: 'page.settings' },
             ]
         }
     ];
+
+    const filteredMenuGroups = menuGroups.map(group => {
+        const filteredItems = group.items.filter(item => {
+            if (!item.permission) return true;
+            return auth?.can && auth.can[item.permission];
+        });
+        return { ...group, items: filteredItems };
+    }).filter(group => group.items.length > 0);
 
     return (
         <aside
@@ -108,7 +117,7 @@ export default function MenuSideBar() {
 
             {/* Navigation block */}
             <nav className="sidebar-nav flex-1 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden" style={{ padding: isExpanded ? '10px 15px' : '10px 8px' }}>
-                {menuGroups.map((group, groupIndex) => (
+                {filteredMenuGroups.map((group, groupIndex) => (
                     <div className="nav-group mb-4" key={groupIndex}>
                         <span
                             className="nav-label text-xs font-bold text-gray-400 uppercase tracking-wider block transition-all duration-300 ease-in-out"

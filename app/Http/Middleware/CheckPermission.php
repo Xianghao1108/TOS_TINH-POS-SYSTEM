@@ -17,8 +17,21 @@ class CheckPermission
     {
         // Get the currently authenticated user
         $user = $request->user();
-        // Check if the user has the specified permission
-        if (! $user || ! $user->hasPermissionTo($permission)) {
+        
+        if (! $user) {
+            abort(403, 'You do not have the required permission.');
+        }
+
+        // Check if the user has the specified permission or is an Admin
+        if ($user->hasRole('Admin')) {
+            return $next($request);
+        }
+
+        try {
+            if (! $user->hasPermissionTo($permission)) {
+                abort(403, 'You do not have the required permission.');
+            }
+        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
             abort(403, 'You do not have the required permission.');
         }
 

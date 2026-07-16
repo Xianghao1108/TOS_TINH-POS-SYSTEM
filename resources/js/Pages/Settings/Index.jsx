@@ -3,7 +3,6 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
 import Breadcrumb from '@/Components/Breadcrumb';
 import InputError from '@/Components/InputError';
-import SalesReportSettings from './components/SalesReportSettings';
 import AdminSystemSettings from './components/AdminSystemSettings';
 
 export default function SettingsIndex({ settings = {} }) {
@@ -81,7 +80,6 @@ export default function SettingsIndex({ settings = {} }) {
         { id: 'receipt', label: 'Receipt & Billing Customization', icon: 'fas fa-receipt text-green-600' },
         { id: 'pos', label: 'POS & Alert Configurations', icon: 'fas fa-sliders-h text-yellow-600' },
         { id: 'telegram', label: 'Telegram Bot Settings', icon: 'fab fa-telegram text-sky-600' },
-        { id: 'reports', label: 'Sales Report Settings', icon: 'fas fa-chart-line text-rose-500' },
         { id: 'backup', label: 'Database Backup & System Tools', icon: 'fas fa-database text-purple-600' },
         { id: 'admin_system', label: 'Admin System Settings', icon: 'fas fa-shield-alt text-indigo-600' },
     ];
@@ -338,20 +336,28 @@ export default function SettingsIndex({ settings = {} }) {
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-                                            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Bot Token</span>
-                                                <span className="text-sky-400 block font-bold truncate select-all">{settings.telegram?.bot_token || 'Not Configured'}</span>
-                                            </div>
-                                            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Webhook Secret Token</span>
-                                                <span className="text-indigo-400 block font-bold truncate">{settings.telegram?.secret_token_status || 'Not Configured'}</span>
-                                            </div>
-                                            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Chat ID</span>
-                                                <span className="text-emerald-400 block font-bold truncate select-all">{settings.telegram?.chat_id || 'Not Configured'}</span>
-                                            </div>
-                                        </div>
+                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-xs font-mono">
+                                             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+                                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Bot Token</span>
+                                                 <span className="text-sky-400 block font-bold truncate select-all">{settings.telegram?.bot_token || 'Not Configured'}</span>
+                                             </div>
+                                             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+                                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Webhook Secret Token</span>
+                                                 <span className="text-indigo-400 block font-bold truncate">{settings.telegram?.secret_token_status || 'Not Configured'}</span>
+                                             </div>
+                                             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+                                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Chat ID</span>
+                                                 <span className="text-emerald-400 block font-bold truncate select-all">{settings.telegram?.chat_id || 'Not Configured'}</span>
+                                             </div>
+                                             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+                                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Report Bot Token</span>
+                                                 <span className="text-rose-400 block font-bold truncate select-all">{settings.telegram?.report_bot_token || 'Not Configured'}</span>
+                                             </div>
+                                             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+                                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">Active Report Chat ID</span>
+                                                 <span className="text-[#E07A5F] block font-bold truncate select-all">{settings.telegram?.report_chat_id || 'Not Configured'}</span>
+                                             </div>
+                                         </div>
                                     </div>
 
                                     {/* Overwrite update input form inputs */}
@@ -400,6 +406,44 @@ export default function SettingsIndex({ settings = {} }) {
                                             <span className="block text-[10px] text-slate-400 mt-1">Leave empty to preserve active configured secret.</span>
                                             <InputError message={errors.telegram_secret_token} className="mt-1" />
                                         </div>
+
+                                     <div className="border-t border-slate-200/50 pt-4 mt-6">
+                                         <h4 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                             <i className="fas fa-chart-line text-rose-500"></i>
+                                             <span>Sales Report Bot Credentials</span>
+                                         </h4>
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                             <div>
+                                                 <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                     Update Telegram Report Bot Token
+                                                 </label>
+                                                 <input
+                                                     type="password"
+                                                     value={data.telegram_report_bot_token}
+                                                     onChange={e => setData('telegram_report_bot_token', e.target.value)}
+                                                     placeholder="Enter new token to update..."
+                                                     className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                                                 />
+                                                 <span className="block text-[10px] text-slate-400 mt-1">Leave empty to preserve active configured token.</span>
+                                                 <InputError message={errors.telegram_report_bot_token} className="mt-1" />
+                                             </div>
+
+                                             <div>
+                                                 <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                     Update Telegram Report Chat ID
+                                                 </label>
+                                                 <input
+                                                     type="text"
+                                                     value={data.telegram_report_chat_id}
+                                                     onChange={e => setData('telegram_report_chat_id', e.target.value)}
+                                                     placeholder="Enter new chat ID to update..."
+                                                     className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                                                 />
+                                                 <span className="block text-[10px] text-slate-400 mt-1">Leave empty to preserve active configured chat ID.</span>
+                                                 <InputError message={errors.telegram_report_chat_id} className="mt-1" />
+                                             </div>
+                                         </div>
+                                     </div>
                                     </div>
                                 </div>
                             )}
@@ -446,10 +490,7 @@ export default function SettingsIndex({ settings = {} }) {
                                 </div>
                             )}
 
-                            {/* SALES REPORT TAB CONTENT */}
-                            {activeTab === 'reports' && (
-                                <SalesReportSettings data={data} setData={setData} errors={errors} settings={settings} />
-                            )}
+
 
 
                             {/* ADMIN SYSTEM SETTINGS TAB CONTENT */}

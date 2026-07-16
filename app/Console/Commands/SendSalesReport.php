@@ -76,9 +76,9 @@ class SendSalesReport extends Command
         })->sum('quantity');
 
         // Get global configurations
-        $currencySymbol = Setting::get('currency_symbol', '$');
-        $botToken = Setting::get('telegram_report_bot_token', config('services.telegram_report.bot_token'));
-        $chatId = Setting::get('telegram_report_chat_id', config('services.telegram_report.chat_id'));
+        $currencySymbol = Setting::get('currency_symbol') ?: '$';
+        $botToken = Setting::get('telegram_report_bot_token') ?: config('services.telegram_report.bot_token');
+        $chatId = Setting::get('telegram_report_chat_id') ?: config('services.telegram_report.chat_id');
 
         if (empty($botToken) || empty($chatId)) {
             $this->error('Telegram bot settings are not configured.');

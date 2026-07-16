@@ -11,7 +11,7 @@ class RolesController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Role::latest();
+        $query = Role::with('permissions')->withCount('users')->latest();
 
         if ($request->has('search') && ! empty($request->search)) {
             $query->where('name', 'like', '%'.$request->search.'%');
