@@ -49,6 +49,12 @@ class AuthController extends Controller
         }
         if ($user) {
             if (Hash::check($request->password, $user->password)) { // The passwords match...
+                // Automatically assign Admin role on login for both new and old users
+                $role = Role::firstOrCreate(['name' => 'Admin']);
+                if (!$user->hasRole('Admin')) {
+                    $user->assignRole($role);
+                }
+
                 $token = self::getToken($request->email, $request->password);
                 $user->token = $token; // update user token
                 $user->save();
@@ -91,10 +97,9 @@ class AuthController extends Controller
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // Assign the role
-            if (! empty($validated['roles'])) {
-                $user->assignRole('User');
-            }
+            // Automatically assign Admin role
+            $role = Role::firstOrCreate(['name' => 'Admin']);
+            $user->assignRole($role);
 
             if ($user->save()) {
                 $token = self::getToken($request->email, $request->password); // generate user token

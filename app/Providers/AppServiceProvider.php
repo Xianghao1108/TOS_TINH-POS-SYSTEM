@@ -32,5 +32,17 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production' || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
             URL::forceScheme('https');
         }
+
+        // Automatically assign Admin role on login for both new and old users
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Auth\Events\Login::class,
+            function (\Illuminate\Auth\Events\Login $event) {
+                $user = $event->user;
+                $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+                if (!$user->hasRole('Admin')) {
+                    $user->assignRole($role);
+                }
+            }
+        );
     }
 }
