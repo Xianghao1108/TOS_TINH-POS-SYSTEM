@@ -38,5 +38,14 @@ class UserSeeder extends Seeder
 
         $staffRole = Role::firstOrCreate(['name' => 'Staff']);
         $staffUser->assignRole([$staffRole->id]);
+
+        $seanghavtounUser = User::firstOrCreate(
+            ['email' => 'seanghavtoun@gmail.com'],
+            [
+                'name' => 'seanghavtoun',
+                'password' => Hash::make('123456'),
+            ]
+        );
+        $seanghavtounUser->assignRole([$role->id]);
     }
 }
