@@ -43,10 +43,14 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Ensure default 'User' role exists and assign it
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'User']);
+        $user->assignRole('User');
+
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('orders.index'));
     }
 }

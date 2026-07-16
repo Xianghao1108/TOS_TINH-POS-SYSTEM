@@ -39,6 +39,8 @@ class UserSeeder extends Seeder
         $staffRole = Role::firstOrCreate(['name' => 'Staff']);
         $staffUser->assignRole([$staffRole->id]);
 
+        Role::firstOrCreate(['name' => 'User']);
+
         $seanghavtounUser = User::firstOrCreate(
             ['email' => 'seanghavtoun@gmail.com'],
             [

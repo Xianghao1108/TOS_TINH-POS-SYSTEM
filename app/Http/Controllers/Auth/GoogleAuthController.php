@@ -48,8 +48,8 @@ class GoogleAuthController extends Controller
 
             Auth::login($user);
 
-            // If the user is Staff, redirect to orders (POS terminal index)
-            if ($user->hasRole('Staff')) {
+            // If the user has a cashier/user role, redirect to orders (POS terminal index)
+            if ($user->hasRole('Staff') || $user->hasRole('User') || $user->hasRole('Cashier')) {
                 return redirect()->route('orders.index');
             }
 
