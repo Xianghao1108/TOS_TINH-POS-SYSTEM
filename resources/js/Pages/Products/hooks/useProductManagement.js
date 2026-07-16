@@ -47,7 +47,7 @@ export function useProductManagement(auth, filters = {}) {
         clearErrors: editClearErrors 
     } = useForm({ id: '', _method: 'PATCH', ...initialFormState });
 
-    const { delete: destroy } = useForm();
+    const { delete: destroy, processing: deleteProcessing, errors: deleteErrors, clearErrors: deleteClearErrors } = useForm();
 
     const [selectedFilters, setSelectedFilters] = useState({
         category_id: filters?.category_id || '',
@@ -167,7 +167,11 @@ export function useProductManagement(auth, filters = {}) {
     const closeDetailModal = () => { setIsDetailModalOpen(false); setProductDetail(null); };
 
     const confirmDataDeletion = (item) => { setDataEdit(item); setConfirmingDataDeletion(true); };
-    const closeModal = () => { setConfirmingDataDeletion(false); setDataEdit({}); };
+    const closeModal = () => { 
+        setConfirmingDataDeletion(false); 
+        setDataEdit({}); 
+        deleteClearErrors();
+    };
     const deleteDataRow = (e) => { 
         e.preventDefault(); 
         destroy(route('products.destroy', dataEdit.id), { 
@@ -199,6 +203,8 @@ export function useProductManagement(auth, filters = {}) {
         setEditData,
         editProcessing,
         editErrors,
+        deleteProcessing,
+        deleteErrors,
 
         handleSearch,
         handleCheckCodeExists,

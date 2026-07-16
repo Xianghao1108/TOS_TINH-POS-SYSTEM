@@ -64,7 +64,9 @@ export default function ProductsPage({
         closeDetailModal,
         confirmDataDeletion,
         closeModal,
-        deleteDataRow
+        deleteDataRow,
+        deleteProcessing,
+        deleteErrors
     } = useProductManagement(auth, filters);
 
     return (
@@ -273,6 +275,8 @@ export default function ProductsPage({
                     onClose={closeModal}
                     onSubmit={deleteDataRow}
                     productTitle={dataEdit?.product_title || ''}
+                    processing={deleteProcessing}
+                    error={deleteErrors?.error}
                 />
 
             </section>

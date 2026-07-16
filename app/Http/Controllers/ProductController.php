@@ -167,14 +167,20 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        // Automatically drop related storage photos via cascade logic
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete('products/'.$image->product_image_title);
+        try {
+            // Automatically drop related storage photos via cascade logic
+            foreach ($product->images as $image) {
+                Storage::disk('public')->delete('products/'.$image->product_image_title);
+            }
+
+            $product->delete();
+
+            return redirect()->back()->with('success', 'Product deleted successfully.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors([
+                'error' => 'Cannot delete product. This product is referenced by existing orders or other records.'
+            ]);
         }
-
-        $product->delete();
-
-        return redirect()->back()->with('success', 'Product deleted successfully.');
     }
 
     public function checkExistProduct(Request $request)
