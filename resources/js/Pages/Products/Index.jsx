@@ -37,6 +37,8 @@ export default function ProductsPage({
         dataEdit,
         productDetail,
         selectedImages,
+        selectedFilters,
+        handleFilterChange,
 
         data,
         setData,
@@ -113,6 +115,74 @@ export default function ProductsPage({
                                     <i className="fas fa-plus text-xs"></i>
                                     Add Product
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Filter Bar */}
+                        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                            {/* Category Filter */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Category</label>
+                                <select
+                                    value={selectedFilters.category_id}
+                                    onChange={(e) => handleFilterChange('category_id', e.target.value)}
+                                    className="h-10 w-full rounded-xl border border-emerald-100 bg-white px-3 text-xs text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 cursor-pointer font-medium"
+                                >
+                                    <option value="">All Categories</option>
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name || c.category_title}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Size Filter */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Size</label>
+                                <select
+                                    value={selectedFilters.size_id}
+                                    onChange={(e) => handleFilterChange('size_id', e.target.value)}
+                                    className="h-10 w-full rounded-xl border border-emerald-100 bg-white px-3 text-xs text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 cursor-pointer font-medium"
+                                >
+                                    <option value="">All Sizes</option>
+                                    {sizes.map(s => <option key={s.id} value={s.id}>{s.size_title}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Unit Filter */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Unit</label>
+                                <select
+                                    value={selectedFilters.unit_id}
+                                    onChange={(e) => handleFilterChange('unit_id', e.target.value)}
+                                    className="h-10 w-full rounded-xl border border-emerald-100 bg-white px-3 text-xs text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 cursor-pointer font-medium"
+                                >
+                                    <option value="">All Units</option>
+                                    {units.map(u => <option key={u.id} value={u.id}>{u.unit_title}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Maker Filter */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Maker</label>
+                                <select
+                                    value={selectedFilters.maker_id}
+                                    onChange={(e) => handleFilterChange('maker_id', e.target.value)}
+                                    className="h-10 w-full rounded-xl border border-emerald-100 bg-white px-3 text-xs text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 cursor-pointer font-medium"
+                                >
+                                    <option value="">All Makers</option>
+                                    {makers.map(m => <option key={m.id} value={m.id}>{m.maker_title}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Brand Filter */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Brand</label>
+                                <select
+                                    value={selectedFilters.brand_id}
+                                    onChange={(e) => handleFilterChange('brand_id', e.target.value)}
+                                    className="h-10 w-full rounded-xl border border-emerald-100 bg-white px-3 text-xs text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 cursor-pointer font-medium"
+                                >
+                                    <option value="">All Brands</option>
+                                    {brands.map(b => <option key={b.id} value={b.id}>{b.brand_title}</option>)}
+                                </select>
                             </div>
                         </div>
 

@@ -49,9 +49,29 @@ export function useProductManagement(auth, filters = {}) {
 
     const { delete: destroy } = useForm();
 
+    const [selectedFilters, setSelectedFilters] = useState({
+        category_id: filters?.category_id || '',
+        size_id: filters?.size_id || '',
+        unit_id: filters?.unit_id || '',
+        maker_id: filters?.maker_id || '',
+        brand_id: filters?.brand_id || '',
+    });
+
+    const handleFilterChange = (name, value) => {
+        const newFilters = { ...selectedFilters, [name]: value };
+        setSelectedFilters(newFilters);
+        router.get(route('products.index'), {
+            search: searchQuery,
+            ...newFilters
+        }, { preserveState: true, replace: true });
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get(route('products.index'), { search: searchQuery }, { preserveState: true, replace: true });
+        router.get(route('products.index'), {
+            search: searchQuery,
+            ...selectedFilters
+        }, { preserveState: true, replace: true });
     };
 
     const handleCheckCodeExists = async (value, isEdit = false) => {
@@ -167,6 +187,8 @@ export function useProductManagement(auth, filters = {}) {
         dataEdit,
         productDetail,
         selectedImages,
+        selectedFilters,
+        handleFilterChange,
 
         data,
         setData,

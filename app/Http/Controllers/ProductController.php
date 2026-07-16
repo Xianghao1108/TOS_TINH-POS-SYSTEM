@@ -26,8 +26,28 @@ class ProductController extends Controller
         $query = Product::with(['category', 'size', 'unit', 'maker', 'brand', 'images']);
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('product_title', 'like', '%'.$request->search.'%')
-                ->orWhere('product_code', 'like', '%'.$request->search.'%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_title', 'like', '%'.$search.'%')
+                  ->orWhere('product_code', 'like', '%'.$search.'%');
+            });
+        }
+
+        // Dynamic filters
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('size_id')) {
+            $query->where('size_id', $request->size_id);
+        }
+        if ($request->filled('unit_id')) {
+            $query->where('unit_id', $request->unit_id);
+        }
+        if ($request->filled('maker_id')) {
+            $query->where('maker_id', $request->maker_id);
+        }
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
         }
 
         return Inertia::render('Products/Index', [
@@ -37,7 +57,7 @@ class ProductController extends Controller
             'units' => Unit::all(),
             'makers' => Maker::all(),
             'brands' => Brand::all(),
-            'filters' => $request->only('search'),
+            'filters' => $request->only(['search', 'category_id', 'size_id', 'unit_id', 'maker_id', 'brand_id']),
         ]);
     }
 
