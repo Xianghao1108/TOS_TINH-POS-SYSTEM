@@ -35,6 +35,17 @@ export function ProductAddModal({
                     </div>
                 </div>
 
+                {Object.keys(errors).length > 0 && (
+                    <div className="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-semibold">
+                        <p className="font-bold mb-1">Please fix the following validation errors:</p>
+                        <ul className="list-disc list-inside">
+                            {Object.entries(errors).map(([key, val]) => (
+                                <li key={key}>{key}: {val}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-1 md:col-span-2 border-2 border-dashed border-emerald-100 rounded-2xl p-4 bg-slate-50/50 text-center hover:bg-slate-50 transition">
                         <label className="block text-sm font-semibold text-slate-800 mb-2">Upload Product Images (JPEG, PNG, JPG) *</label>

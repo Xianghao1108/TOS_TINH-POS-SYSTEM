@@ -63,6 +63,22 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('images')) {
+            $files = $request->file('images');
+            $validFiles = [];
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    if ($file instanceof \Illuminate\Http\UploadedFile) {
+                        $validFiles[] = $file;
+                    }
+                }
+            } elseif ($files instanceof \Illuminate\Http\UploadedFile) {
+                $validFiles[] = $files;
+            }
+            $request->files->set('images', $validFiles);
+            $request->request->remove('images');
+        }
+
         $validated = $request->validate([
             'product_title' => 'required|string|max:255',
             'product_code' => 'required|string|max:255|unique:products,product_code',
@@ -75,9 +91,11 @@ class ProductController extends Controller
             'maker_id' => 'required|exists:makers,id',
             'brand_id' => 'required|exists:brands,id',
             'product_description' => 'nullable|string',
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate files block
         ]);
+
+        $validated['user_id'] = $request->user()->id;
 
         $product = Product::create($validated);
 
@@ -110,6 +128,22 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        if ($request->has('images')) {
+            $files = $request->file('images');
+            $validFiles = [];
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    if ($file instanceof \Illuminate\Http\UploadedFile) {
+                        $validFiles[] = $file;
+                    }
+                }
+            } elseif ($files instanceof \Illuminate\Http\UploadedFile) {
+                $validFiles[] = $files;
+            }
+            $request->files->set('images', $validFiles);
+            $request->request->remove('images');
+        }
+
         // Inertia multipart patch request compatibility handler
         $validated = $request->validate([
             'product_title' => 'required|string|max:255',
@@ -123,9 +157,11 @@ class ProductController extends Controller
             'maker_id' => 'required|exists:makers,id',
             'brand_id' => 'required|exists:brands,id',
             'product_description' => 'nullable|string',
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        $validated['user_id'] = $validated['user_id'] ?? $request->user()->id;
 
         $product->update($validated);
 

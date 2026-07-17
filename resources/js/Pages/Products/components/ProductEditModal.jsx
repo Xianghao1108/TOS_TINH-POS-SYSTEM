@@ -26,7 +26,7 @@ export function ProductEditModal({
 }) {
     return (
         <Modal show={isOpen} onClose={onClose}>
-            <form onSubmit={onSubmit} className="p-6 max-h-[85vh] overflow-y-auto text-left">
+            <form onSubmit={onSubmit} noValidate className="p-6 max-h-[85vh] overflow-y-auto text-left">
                 <div className="mb-6 flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 ring-1 ring-cyan-100">
                         <i className="fas fa-edit text-lg"></i>
@@ -36,6 +36,17 @@ export function ProductEditModal({
                         <p className="mt-1 text-sm text-slate-500">Update product specifications or manage photo gallery files.</p>
                     </div>
                 </div>
+
+                {Object.keys(editErrors).length > 0 && (
+                    <div className="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-semibold">
+                        <p className="font-bold mb-1">Please fix the following validation errors:</p>
+                        <ul className="list-disc list-inside">
+                            {Object.entries(editErrors).map(([key, val]) => (
+                                <li key={key}>{key}: {val}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Display currently active file assets array for instant storage deletes */}
@@ -122,6 +133,7 @@ export function ProductEditModal({
                             onChange={e => setEditData('category_id', e.target.value)} 
                             required
                         >
+                            <option value="">Select Category</option>
                             {categories.map(c => <option key={c.id} value={c.id}>{c.category_title || c.name}</option>)}
                         </select>
                         <InputError message={editErrors.category_id} className="mt-2" />
@@ -134,6 +146,7 @@ export function ProductEditModal({
                             onChange={e => setEditData('brand_id', e.target.value)} 
                             required
                         >
+                            <option value="">Select Brand</option>
                             {brands.map(b => <option key={b.id} value={b.id}>{b.brand_title}</option>)}
                         </select>
                         <InputError message={editErrors.brand_id} className="mt-2" />
@@ -146,6 +159,7 @@ export function ProductEditModal({
                             onChange={e => setEditData('maker_id', e.target.value)} 
                             required
                         >
+                            <option value="">Select Maker</option>
                             {makers.map(m => <option key={m.id} value={m.id}>{m.maker_title}</option>)}
                         </select>
                         <InputError message={editErrors.maker_id} className="mt-2" />
@@ -158,6 +172,7 @@ export function ProductEditModal({
                             onChange={e => setEditData('size_id', e.target.value)} 
                             required
                         >
+                            <option value="">Select Size</option>
                             {sizes.map(s => <option key={s.id} value={s.id}>{s.size_title}</option>)}
                         </select>
                         <InputError message={editErrors.size_id} className="mt-2" />
@@ -170,6 +185,7 @@ export function ProductEditModal({
                             onChange={e => setEditData('unit_id', e.target.value)} 
                             required
                         >
+                            <option value="">Select Unit</option>
                             {units.map(u => <option key={u.id} value={u.id}>{u.unit_title}</option>)}
                         </select>
                         <InputError message={editErrors.unit_id} className="mt-2" />

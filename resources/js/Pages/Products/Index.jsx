@@ -276,7 +276,7 @@ export default function ProductsPage({
                     onSubmit={deleteDataRow}
                     productTitle={dataEdit?.product_title || ''}
                     processing={deleteProcessing}
-                    error={deleteErrors?.error}
+                    error={deleteErrors?.error || Object.values(deleteErrors || {})[0]}
                 />
 
             </section>
