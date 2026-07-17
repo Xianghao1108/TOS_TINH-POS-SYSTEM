@@ -45,7 +45,7 @@ class RegisteredUserController extends Controller
 
         // Ensure default 'User' role exists and assign it
         \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'User']);
-        $user->assignRole('User');
+        $user->syncRoles(['User']);
 
         event(new Registered($user));
 

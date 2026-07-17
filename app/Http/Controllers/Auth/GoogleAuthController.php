@@ -30,30 +30,30 @@ class GoogleAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            // Find user by email or create them
+            // Find user by email or create new
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if (! $user) {
                 $user = User::create([
-                    'name' => $googleUser->getName(),
-                    'email' => $googleUser->getEmail(),
+                    'name'     => $googleUser->getName(),
+                    'email'    => $googleUser->getEmail(),
                     'password' => bcrypt(str()->random(24)),
                 ]);
 
-                // Assign default role of 'User'
-                if ($user) {
-                    $user->assignRole('User');
-                }
+                // Ensure 'User' role exists then assign it
+                \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'User']);
+                $user->syncRoles(['User']);
             }
 
             Auth::login($user);
 
-            // If the user has a cashier/user role, redirect to orders (POS terminal index)
-            if ($user->hasRole('Staff') || $user->hasRole('User') || $user->hasRole('Cashier')) {
-                return redirect()->route('orders.index');
+            // Admin goes to dashboard; everyone else goes to POS/orders
+            if ($user->hasRole('Admin')) {
+                return redirect()->route('dashboard');
             }
 
-            return redirect()->route('dashboard');
+            return redirect()->route('orders.index');
+
         } catch (\Exception $e) {
             return redirect()->route('login')->withErrors([
                 'email' => 'Google authentication failed. Please try again.',
